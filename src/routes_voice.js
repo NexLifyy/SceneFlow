@@ -8,12 +8,12 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const { v4: uuidv4 } = require('uuid');
 
-const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(UPLOADS_DIR)) {
-  try { fs.mkdirSync(UPLOADS_DIR, { recursive: true }); } catch {}
-}
+const isVercel = Boolean(process.env.VERCEL);
+const UPLOADS_DIR = isVercel ? path.join(os.tmpdir(), 'sceneflow_uploads') : path.join(__dirname, '..', 'uploads');
+try { if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true }); } catch {}
 
 const DEFAULT_MODEL = 's2.1-pro-free';
 const DEFAULT_VOICE_ID = 'bf322df2096a46f18c579d0baa36f41d';
@@ -161,11 +161,18 @@ router.post(['/api/voice/tts', '/api/voiceover/tts'], async (req, res) => {
     const arrayBuffer = await fishRes.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Save temporary audio file in uploads/ for easy sharing with Timing
+    // Cache temporary audio file in uploads/ for easy sharing with Timing
     const ext = format === 'wav' ? '.wav' : '.mp3';
     const filename = `sceneflow_voice_${uuidv4().substring(0, 8)}${ext}`;
-    const filePath = path.join(UPLOADS_DIR, filename);
-    await fs.promises.writeFile(filePath, buffer);
+    try {
+      if (!fs.existsSync(UPLOADS_DIR)) {
+        fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+      }
+      const filePath = path.join(UPLOADS_DIR, filename);
+      await fs.promises.writeFile(filePath, buffer);
+    } catch (saveErr) {
+      console.warn('Could not cache voice file to disk:', saveErr.message);
+    }
 
     const mimeType = format === 'wav' ? 'audio/wav' : 'audio/mpeg';
 

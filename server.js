@@ -26,6 +26,22 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '100mb' }));
 
+const isVercel = Boolean(process.env.VERCEL);
+
+const TEMP_DIR = isVercel ? path.join(os.tmpdir(), 'sceneflow_temp') : path.join(__dirname, 'temp');
+try { if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true }); } catch {}
+
+const UPLOADS_DIR = isVercel ? path.join(os.tmpdir(), 'sceneflow_uploads') : path.join(__dirname, 'uploads');
+try { if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true }); } catch {}
+
+const EXPORTS_DIR = isVercel ? path.join(os.tmpdir(), 'sceneflow_exports') : path.join(__dirname, 'exports');
+try { if (!fs.existsSync(EXPORTS_DIR)) fs.mkdirSync(EXPORTS_DIR, { recursive: true }); } catch {}
+
+function getDefaultExportDir() {
+  if (isVercel) return EXPORTS_DIR;
+  return process.platform === 'win32' && fs.existsSync('C:\\') ? 'C:\\' : EXPORTS_DIR;
+}
+
 // Legacy page URL redirects (keep old links and bookmarks working)
 const LEGACY_ROUTE_REDIRECTS = {
   '/vo-hunter': '/voice',
@@ -51,25 +67,10 @@ app.use('/js', express.static(path.join(__dirname, 'public', 'js'), {
   lastModified: true,
   setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache')
 }));
+app.use('/uploads', express.static(UPLOADS_DIR));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(require('./src/routes_timing'));
 app.use(require('./src/routes_voice'));
-
-const isVercel = Boolean(process.env.VERCEL);
-
-const TEMP_DIR = isVercel ? path.join(os.tmpdir(), 'sceneflow_temp') : path.join(__dirname, 'temp');
-try { if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true }); } catch {}
-
-const UPLOADS_DIR = isVercel ? path.join(os.tmpdir(), 'sceneflow_uploads') : path.join(__dirname, 'uploads');
-try { if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true }); } catch {}
-
-const EXPORTS_DIR = isVercel ? path.join(os.tmpdir(), 'sceneflow_exports') : path.join(__dirname, 'exports');
-try { if (!fs.existsSync(EXPORTS_DIR)) fs.mkdirSync(EXPORTS_DIR, { recursive: true }); } catch {}
-
-function getDefaultExportDir() {
-  if (isVercel) return EXPORTS_DIR;
-  return process.platform === 'win32' && fs.existsSync('C:\\') ? 'C:\\' : EXPORTS_DIR;
-}
 
 function isDirWritable(dirPath) {
   const probe = path.join(dirPath, `.sceneflow_write_probe_${process.pid}_${Date.now()}`);

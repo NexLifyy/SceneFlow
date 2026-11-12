@@ -37,16 +37,21 @@ const {
 } = require('./timing');
 
 const { getAudioDuration } = require('./renderer');
+const os = require('os');
 
-const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
+const isVercel = Boolean(process.env.VERCEL);
+const UPLOADS_DIR = isVercel ? path.join(os.tmpdir(), 'sceneflow_uploads') : path.join(__dirname, '..', 'uploads');
+try { if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true }); } catch {}
+
 // Keep 'splitter_projects' directory name to preserve previously saved user Timing projects
-const PROJECTS_DIR = path.join(__dirname, '..', 'data', 'splitter_projects');
-if (!fs.existsSync(PROJECTS_DIR)) {
-  try { fs.mkdirSync(PROJECTS_DIR, { recursive: true }); } catch {}
-}
+const PROJECTS_DIR = isVercel ? path.join(os.tmpdir(), 'sceneflow_projects') : path.join(__dirname, '..', 'data', 'splitter_projects');
+try { if (!fs.existsSync(PROJECTS_DIR)) fs.mkdirSync(PROJECTS_DIR, { recursive: true }); } catch {}
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOADS_DIR),
+  destination: (req, file, cb) => {
+    try { if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true }); } catch {}
+    cb(null, UPLOADS_DIR);
+  },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname) || '.mp3';
     cb(null, `${uuidv4()}${ext}`);
