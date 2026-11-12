@@ -1,0 +1,40 @@
+const ffmpeg = require('../node_modules/ffmpeg-static');
+const { spawnSync } = require('child_process');
+const path = require('path');
+const fs = require('fs');
+
+const ass = `[Script Info]
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1080
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Poppins,86,&H00FFFFFF,&H0000FFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,4,2.5,2,10,10,216,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:00.80,Default,,0,0,0,,{\\fscx110\\fscy110\\c&H0000FFFF&}IT'S{\\fscx100\\fscy100\\c&H00FFFFFF&} A RANDOM TUESDAY.
+Dialogue: 0,0:00:00.80,0:00:01.20,Default,,0,0,0,,IT'S {\\fscx110\\fscy110\\c&H0000FFFF&}A{\\fscx100\\fscy100\\c&H00FFFFFF&} RANDOM TUESDAY.
+Dialogue: 0,0:00:01.20,0:00:02.00,Default,,0,0,0,,IT'S A {\\fscx110\\fscy110\\c&H0000FFFF&}RANDOM{\\fscx100\\fscy100\\c&H00FFFFFF&} TUESDAY.
+Dialogue: 0,0:00:02.00,0:00:03.50,Default,,0,0,0,,IT'S A RANDOM {\\fscx110\\fscy110\\c&H0000FFFF&}TUESDAY.{\\fscx100\\fscy100\\c&H00FFFFFF&}
+`;
+
+const assFile = path.resolve(__dirname, 'scale_highlight_test.ass');
+fs.writeFileSync(assFile, ass, 'utf8');
+
+const fontsDir = path.resolve(__dirname, '..', 'fonts').replace(/\\/g, '/').replace(/:/g, '\\:');
+const assEscaped = assFile.replace(/\\/g, '/').replace(/:/g, '\\:');
+const outFrame = path.resolve(__dirname, 'scale_frame_0.5s.png');
+
+const res = spawnSync(ffmpeg, [
+  '-y',
+  '-f', 'lavfi', '-i', 'color=c=black:s=1920x1080:r=30',
+  '-ss', '0.5',
+  '-vf', `subtitles='${assEscaped}':fontsdir='${fontsDir}'`,
+  '-frames:v', '1',
+  outFrame
+], { encoding: 'utf8' });
+
+console.log('Result status:', res.status, 'File created:', fs.existsSync(outFrame));

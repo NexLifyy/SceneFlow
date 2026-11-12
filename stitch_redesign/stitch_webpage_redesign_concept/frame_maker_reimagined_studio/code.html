@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Frame Maker Studio | Next-Gen Generative Video Engine</title>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            obsidian: {
+              950: '#07080d',
+              900: '#0b0d14',
+              850: '#0f121d',
+              800: '#141824',
+              750: '#1a1f30',
+              700: '#232940'
+            },
+            brand: {
+              primary: '#6366f1',
+              violet: '#8b5cf6',
+              cyan: '#06b6d4',
+              glow: '#4f46e5'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'monospace']
+          },
+          boxShadow: {
+            'glow-subtle': '0 0 25px -5px rgba(99, 102, 241, 0.15)',
+            'glow-accent': '0 0 30px -3px rgba(139, 92, 246, 0.35)',
+            'glow-cyan': '0 0 20px -3px rgba(6, 182, 212, 0.4)'
+          }
+        }
+      }
+    }
+  </script>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Custom CSS for Studio Aesthetic -->
+<style data-purpose="custom-scrollbars-and-glow">
+    /* Precision Studio Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b0d14;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #232940;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #6366f1;
+    }
+
+    /* Waveform visual simulation */
+    .waveform-bar {
+      transform-origin: bottom;
+      transition: height 0.15s ease-in-out;
+    }
+
+    /* Gradient Border Shimmer */
+    .border-gradient-glow {
+      border: 1px solid transparent;
+      background: linear-gradient(#0f121d, #0f121d) padding-box,
+                  linear-gradient(135deg, rgba(99, 102, 241, 0.4), rgba(139, 92, 246, 0.15), rgba(6, 182, 212, 0.3)) border-box;
+    }
+
+    /* Active Subtitle Preview Styling */
+    .caption-highlight-beast {
+      text-shadow: 0 4px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 10px 25px rgba(250, 204, 21, 0.5);
+    }
+  </style>
+</head>
+<body class="bg-obsidian-950 text-slate-200 font-sans antialiased min-h-screen selection:bg-brand-primary selection:text-white">
+<!-- BEGIN: TopNavigationBar -->
+<header class="sticky top-0 z-50 bg-obsidian-900/90 backdrop-blur-xl border-b border-obsidian-750/80 px-4 py-2.5 transition-all">
+<div class="max-w-[1720px] mx-auto flex items-center justify-between gap-4">
+<!-- Brand & Project Switcher -->
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2.5">
+<div class="relative w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-primary via-brand-violet to-brand-cyan p-[1.5px] shadow-glow-accent">
+<div class="w-full h-full bg-obsidian-950 rounded-[10px] flex items-center justify-center">
+<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"></path>
+</svg>
+</div>
+</div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="text-base font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">Frame Maker</span>
+<span class="text-[10px] font-mono uppercase bg-brand-primary/20 text-brand-primary border border-brand-primary/40 px-1.5 py-0.5 rounded font-semibold">Pro v3.2</span>
+</div>
+<p class="text-[11px] text-slate-400 font-mono tracking-wide">AI Generative Video Engine</p>
+</div>
+</div>
+<!-- Navigation Tabs -->
+<nav aria-label="Main Navigation" class="hidden md:flex items-center gap-1 bg-obsidian-850 p-1 rounded-xl border border-obsidian-700/60">
+<button class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-obsidian-750 transition-colors">
+            Studio
+          </button>
+<button class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-brand-primary shadow-glow-subtle flex items-center gap-1.5">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+</span>
+            Frame Hunter
+          </button>
+<button class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-obsidian-750 transition-colors">
+            Script Splitter
+          </button>
+<button class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-obsidian-750 transition-colors flex items-center gap-1.5">
+            Prompt Hunter
+            <span class="text-[9px] font-mono bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1 py-0.2 rounded font-bold">SOON</span>
+</button>
+<button class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-obsidian-750 transition-colors">
+            Automations
+          </button>
+</nav>
+</div>
+<!-- System Diagnostic Telemetry & Actions -->
+<div class="flex items-center gap-3">
+<!-- Project Breadcrumb -->
+<div class="hidden xl:flex items-center gap-2 bg-obsidian-850/80 border border-obsidian-700/60 px-3 py-1.5 rounded-lg text-xs">
+<svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span class="text-slate-400">Project:</span>
+<span class="font-mono text-slate-200 font-medium">untitled_render_01</span>
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+</div>
+<!-- Telemetry Indicators -->
+<div class="hidden lg:flex items-center gap-2 text-xs font-mono">
+<div class="flex items-center gap-1.5 bg-obsidian-850 border border-obsidian-700/70 px-2.5 py-1.5 rounded-lg text-emerald-400">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+<span class="text-slate-400">GPU:</span>
+<span class="font-semibold text-slate-200">RTX 4090</span>
+</div>
+<div class="flex items-center gap-1.5 bg-obsidian-850 border border-obsidian-700/70 px-2.5 py-1.5 rounded-lg text-slate-300">
+<span class="text-slate-400">CPU:</span>
+<span class="font-semibold text-brand-cyan">14%</span>
+<span class="text-[10px] text-slate-500">(libx264)</span>
+</div>
+</div>
+<!-- History & Settings -->
+<button class="flex items-center gap-1.5 bg-obsidian-800 hover:bg-obsidian-700 border border-obsidian-700/80 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 transition-colors">
+<svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>History</span>
+<span class="ml-1 bg-obsidian-700 text-slate-300 px-1.5 py-0.2 rounded-full text-[10px] font-mono">8</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-white bg-obsidian-800 hover:bg-obsidian-700 border border-obsidian-700/80 rounded-lg transition-colors" title="Engine Settings">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+<path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+</div>
+</header>
+<!-- END: TopNavigationBar -->
+<!-- Main Canvas Container -->
+<main class="max-w-[1720px] mx-auto p-4 sm:p-6 space-y-6">
+<!-- BEGIN: Section1_MediaAudioDeck -->
+<section class="border-gradient-glow rounded-2xl bg-obsidian-900/80 p-5 backdrop-blur-md shadow-2xl relative overflow-hidden" data-purpose="media-ingestion-deck">
+<div class="flex items-center justify-between pb-4 border-b border-obsidian-750 mb-5">
+<div class="flex items-center gap-3">
+<span class="flex items-center justify-center w-7 h-7 rounded-lg bg-brand-primary/20 text-brand-primary border border-brand-primary/40 font-mono text-xs font-bold">01</span>
+<div>
+<h2 class="text-sm font-bold uppercase tracking-wider text-slate-100 flex items-center gap-2">
+              Media &amp; Audio Asset Deck
+              <span class="text-[10px] font-normal text-slate-400 capitalize">(Timestamp Driven Ingestion)</span>
+</h2>
+</div>
+</div>
+<!-- Batch Action Toolbar -->
+<div class="flex flex-wrap items-center gap-2">
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-primary hover:bg-brand-primary/90 text-white text-xs font-medium transition shadow-sm shadow-indigo-900/50">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+            Add Folder
+          </button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-slate-300 border border-obsidian-700 text-xs font-medium transition">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+            Scan Folder on Disk
+          </button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-slate-300 border border-obsidian-700 text-xs font-medium transition">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+            Add Images / Videos
+          </button>
+<button class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-medium transition">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+            Clear Media
+          </button>
+</div>
+</div>
+<!-- Drag & Drop Ingestion Zone -->
+<div class="relative group border-2 border-dashed border-obsidian-700 hover:border-brand-primary/80 rounded-xl p-8 transition-all bg-obsidian-950/40 hover:bg-obsidian-850/30 flex flex-col items-center justify-center text-center cursor-pointer">
+<div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-primary/20 via-brand-violet/20 to-brand-cyan/20 border border-brand-primary/30 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+<svg class="w-7 h-7 text-brand-primary" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+</svg>
+</div>
+<p class="text-sm font-semibold text-slate-200 mb-1">Drag &amp; drop timestamped images or video clips here</p>
+<p class="text-xs text-slate-400 max-w-md">Supports automated chronological sorting based on smart file nomenclature.</p>
+<div class="mt-3.5 flex items-center gap-2">
+<span class="text-[11px] text-slate-500 font-mono">Recognized formats:</span>
+<span class="px-2 py-0.5 rounded bg-brand-primary/10 border border-brand-primary/30 text-brand-primary text-xs font-mono font-medium">0_00-0_03.png</span>
+<span class="px-2 py-0.5 rounded bg-brand-violet/10 border border-brand-violet/30 text-brand-violet text-xs font-mono font-medium">0_30-0_33.png</span>
+<span class="px-2 py-0.5 rounded bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan text-xs font-mono font-medium">scene_01.mp4</span>
+</div>
+</div>
+<!-- Secondary Multi-Audio Input Rails -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+<!-- Voiceover Ingestion Deck -->
+<div class="bg-obsidian-850/80 border border-obsidian-750 rounded-xl p-3.5 flex flex-col justify-between">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<span class="p-1.5 rounded-lg bg-indigo-500/10 text-brand-primary">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</span>
+<span class="text-xs font-bold text-slate-200 tracking-wide uppercase">Voiceover Track</span>
+<span class="text-[10px] text-slate-400 font-mono">(Sync Master)</span>
+</div>
+<span class="text-[11px] text-amber-400 font-mono bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">Waiting for Audio</span>
+</div>
+<div class="flex items-center gap-3">
+<button class="px-3 py-1.5 bg-obsidian-750 hover:bg-obsidian-700 text-slate-200 text-xs font-medium rounded-lg border border-obsidian-700 flex items-center gap-1.5 shrink-0 transition">
+<svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+              Select Audio File
+            </button>
+<div class="w-full bg-obsidian-950/70 border border-obsidian-750 rounded-lg px-3 py-1.5 text-xs font-mono text-slate-500 truncate flex items-center justify-between">
+<span>No voiceover file linked yet</span>
+<span class="text-[10px] text-slate-600">.WAV / .MP3 / .M4A</span>
+</div>
+</div>
+</div>
+<!-- Background Music Ingestion Deck -->
+<div class="bg-obsidian-850/80 border border-obsidian-750 rounded-xl p-3.5 flex flex-col justify-between">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<span class="p-1.5 rounded-lg bg-pink-500/10 text-pink-400">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12 0c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</span>
+<span class="text-xs font-bold text-slate-200 tracking-wide uppercase">Background Music</span>
+<span class="text-[10px] text-slate-400 font-mono">(Optional Bed)</span>
+</div>
+<div class="flex items-center gap-2 text-xs">
+<label class="text-[11px] text-slate-400">Ducking:</label>
+<input checked="" class="rounded border-obsidian-700 bg-obsidian-900 text-brand-primary focus:ring-0" type="checkbox"/>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="px-3 py-1.5 bg-obsidian-750 hover:bg-obsidian-700 text-slate-200 text-xs font-medium rounded-lg border border-obsidian-700 flex items-center gap-1.5 shrink-0 transition">
+<svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+              Select Music
+            </button>
+<div class="w-full bg-obsidian-950/70 border border-obsidian-750 rounded-lg px-3 py-1.5 text-xs font-mono text-slate-500 truncate flex items-center justify-between">
+<span>No background music added</span>
+<span class="text-[10px] text-slate-600">-18 dB Default</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: Section1_MediaAudioDeck -->
+<!-- BEGIN: Section2_RenderMotionSettings -->
+<section class="border-gradient-glow rounded-2xl bg-obsidian-900/80 p-5 backdrop-blur-md shadow-2xl relative" data-purpose="render-motion-engine">
+<div class="flex items-center justify-between pb-4 border-b border-obsidian-750 mb-5">
+<div class="flex items-center gap-3">
+<span class="flex items-center justify-center w-7 h-7 rounded-lg bg-brand-violet/20 text-brand-violet border border-brand-violet/40 font-mono text-xs font-bold">02</span>
+<div>
+<h2 class="text-sm font-bold uppercase tracking-wider text-slate-100 flex items-center gap-2">
+              Render &amp; Motion Engine Settings
+              <span class="text-[10px] font-normal text-slate-400 capitalize">(Hardware Accelerated libx264/libx265)</span>
+</h2>
+</div>
+</div>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-slate-300 border border-obsidian-700 text-xs font-medium transition">
+<svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+          Save as Default Preset
+        </button>
+</div>
+<!-- Controls Matrix -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Video Resolution -->
+<div class="space-y-1.5 bg-obsidian-850/60 p-3 rounded-xl border border-obsidian-750">
+<label class="text-[11px] font-semibold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+<span>Video Resolution</span>
+<span class="text-brand-primary text-[10px] font-mono">16:9 2K</span>
+</label>
+<div class="relative">
+<select class="w-full bg-obsidian-950 border border-obsidian-700 text-slate-200 text-xs rounded-lg px-2.5 py-2 pr-8 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary">
+<option selected="">2K QHD (2560×1440)</option>
+<option>4K UHD (3840×2160)</option>
+<option>1080p FHD (1920×1080)</option>
+<option>9:16 Shorts (1080×1920)</option>
+</select>
+</div>
+</div>
+<!-- Encoding Quality -->
+<div class="space-y-1.5 bg-obsidian-850/60 p-3 rounded-xl border border-obsidian-750">
+<label class="text-[11px] font-semibold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+<span>Encoding Quality</span>
+<span class="text-brand-cyan text-[10px] font-mono">Constant VBR</span>
+</label>
+<div class="relative">
+<select class="w-full bg-obsidian-950 border border-obsidian-700 text-slate-200 text-xs rounded-lg px-2.5 py-2 pr-8 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary">
+<option selected="">YouTube Best — ~8 Mbps</option>
+<option>Ultra High Quality — 18 Mbps</option>
+<option>ProRes 422 HQ (Master)</option>
+<option>H.265 / HEVC Compact (CRF 18)</option>
+</select>
+</div>
+</div>
+<!-- Framerate -->
+<div class="space-y-1.5 bg-obsidian-850/60 p-3 rounded-xl border border-obsidian-750">
+<label class="text-[11px] font-semibold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+<span>Framerate (FPS)</span>
+<span class="text-brand-violet text-[10px] font-mono">Smooth</span>
+</label>
+<div class="relative">
+<select class="w-full bg-obsidian-950 border border-obsidian-700 text-slate-200 text-xs rounded-lg px-2.5 py-2 pr-8 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary">
+<option>60 fps (Ultra Smooth)</option>
+<option selected="">30 fps (Standard)</option>
+<option>24 fps (Cinematic Film)</option>
+</select>
+</div>
+</div>
+<!-- Frame Fit Mode -->
+<div class="space-y-1.5 bg-obsidian-850/60 p-3 rounded-xl border border-obsidian-750">
+<label class="text-[11px] font-semibold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+<span>Frame Fit Mode</span>
+<span class="text-amber-400 text-[10px] font-mono">Aspect Ratio</span>
+</label>
+<div class="relative">
+<select class="w-full bg-obsidian-950 border border-obsidian-700 text-slate-200 text-xs rounded-lg px-2.5 py-2 pr-8 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary">
+<option selected="">Fit with black bars (Letterbox)</option>
+<option>Smart Zoom &amp; Fill (Cover)</option>
+<option>Dynamic Intelligent Crop</option>
+<option>Stretch to Container</option>
+</select>
+</div>
+</div>
+<!-- Image Motion (Pan/Zoom) -->
+<div class="space-y-1.5 bg-obsidian-850/60 p-3 rounded-xl border border-obsidian-750">
+<label class="text-[11px] font-semibold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+<span>Image Motion (Pan/Zoom)</span>
+<span class="text-indigo-400 text-[10px] font-mono">Ken Burns</span>
+</label>
+<div class="relative">
+<select class="w-full bg-obsidian-950 border border-obsidian-700 text-slate-200 text-xs rounded-lg px-2.5 py-2 pr-8 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary">
+<option selected="">Auto — Mixed Dynamic Motion</option>
+<option>Subtle Slow Zoom In</option>
+<option>Dramatic Zoom Out</option>
+<option>Cinematic Horizontal Pan</option>
+<option>Static (No Movement)</option>
+</select>
+</div>
+</div>
+<!-- Motion Pace -->
+<div class="space-y-1.5 bg-obsidian-850/60 p-3 rounded-xl border border-obsidian-750">
+<label class="text-[11px] font-semibold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+<span>Motion Pace</span>
+<span class="text-slate-400 text-[10px] font-mono">Timing</span>
+</label>
+<div class="relative">
+<select class="w-full bg-obsidian-950 border border-obsidian-700 text-slate-200 text-xs rounded-lg px-2.5 py-2 pr-8 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary">
+<option>Slow &amp; Graceful</option>
+<option selected="">Medium (Standard Flow)</option>
+<option>Fast &amp; Punchy</option>
+<option>Audio-Beat Sync Speed</option>
+</select>
+</div>
+</div>
+<!-- Transitions -->
+<div class="space-y-1.5 bg-obsidian-850/60 p-3 rounded-xl border border-obsidian-750">
+<label class="text-[11px] font-semibold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+<span>Transitions</span>
+<span class="text-emerald-400 text-[10px] font-mono">Cuts</span>
+</label>
+<div class="relative">
+<select class="w-full bg-obsidian-950 border border-obsidian-700 text-slate-200 text-xs rounded-lg px-2.5 py-2 pr-8 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary">
+<option selected="">Off — Straight hard cuts</option>
+<option>Smooth Cross Dissolve (0.3s)</option>
+<option>Whip Pan Blur</option>
+<option>Subtle Film Flash</option>
+<option>Glitch Artifact Sync</option>
+</select>
+</div>
+</div>
+<!-- Gaps Between Clips -->
+<div class="space-y-1.5 bg-obsidian-850/60 p-3 rounded-xl border border-obsidian-750">
+<label class="text-[11px] font-semibold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+<span>Gaps Between Clips</span>
+<span class="text-slate-400 text-[10px] font-mono">Fallback</span>
+</label>
+<div class="relative">
+<select class="w-full bg-obsidian-950 border border-obsidian-700 text-slate-200 text-xs rounded-lg px-2.5 py-2 pr-8 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary">
+<option selected="">Extend previous clip (Freeze Hold)</option>
+<option>Insert Black Buffer Frame</option>
+<option>Smart Motion Extrapolation</option>
+</select>
+</div>
+</div>
+</div>
+<!-- Expandable Motion Effects Pool -->
+<div class="mt-4 border border-obsidian-750 rounded-xl bg-obsidian-950/40 p-3 flex items-center justify-between cursor-pointer hover:bg-obsidian-850/40 transition">
+<div class="flex items-center gap-2 text-xs font-semibold text-slate-300">
+<svg class="w-4 h-4 text-brand-primary" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>Advanced Motion Effects Pool &amp; Camera Shake Engine</span>
+<span class="text-[10px] font-mono bg-brand-primary/10 text-brand-primary px-2 py-0.5 rounded border border-brand-primary/30">12 Active FX</span>
+</div>
+<span class="text-[11px] text-slate-400">Click to expand parameters</span>
+</div>
+</section>
+<!-- END: Section2_RenderMotionSettings -->
+<!-- BEGIN: Section3_CaptionsStudio -->
+<section class="border-gradient-glow rounded-2xl bg-obsidian-900/80 p-5 backdrop-blur-md shadow-2xl relative" data-purpose="captions-subtitles-studio">
+<div class="flex flex-wrap items-center justify-between pb-4 border-b border-obsidian-750 mb-5 gap-3">
+<div class="flex items-center gap-3">
+<span class="flex items-center justify-center w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/40 font-mono text-xs font-bold">03</span>
+<div>
+<h2 class="text-sm font-bold uppercase tracking-wider text-slate-100 flex items-center gap-2">
+              Captions &amp; Subtitles Studio
+              <span class="text-[10px] font-normal text-emerald-400 font-mono">(Synced to Speech Timecodes)</span>
+</h2>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<!-- Words per line selector -->
+<div class="flex items-center gap-2 bg-obsidian-850 px-3 py-1.5 rounded-lg border border-obsidian-700">
+<svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M4 6h16M4 12h10M4 18h7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span class="text-xs text-slate-300">Words Per Line:</span>
+<select class="bg-transparent text-xs font-mono text-brand-cyan border-none p-0 focus:ring-0 cursor-pointer">
+<option>1 Word (Punchy)</option>
+<option>2 Words</option>
+<option selected="">3-4 Words (Balanced)</option>
+<option>Full Sentence</option>
+</select>
+</div>
+<!-- Text Color Palette Selector -->
+<div class="flex items-center gap-2 bg-obsidian-850 px-3 py-1.5 rounded-lg border border-obsidian-700">
+<span class="text-xs text-slate-400 font-medium mr-1">Highlight:</span>
+<div class="flex items-center gap-1.5">
+<button class="w-4 h-4 rounded-full bg-white ring-2 ring-transparent hover:ring-brand-primary" title="White"></button>
+<button class="w-4 h-4 rounded-full bg-yellow-400 ring-2 ring-yellow-400/80 shadow-sm" title="Beast Yellow"></button>
+<button class="w-4 h-4 rounded-full bg-cyan-400 ring-2 ring-transparent hover:ring-white" title="Electric Cyan"></button>
+<button class="w-4 h-4 rounded-full bg-pink-500 ring-2 ring-transparent hover:ring-white" title="Neon Pink"></button>
+<button class="w-4 h-4 rounded-full bg-emerald-400 ring-2 ring-transparent hover:ring-white" title="Hustle Green"></button>
+<button class="w-4 h-4 rounded-full bg-violet-400 ring-2 ring-transparent hover:ring-white" title="Lavender"></button>
+</div>
+</div>
+</div>
+</div>
+<!-- Caption Style Card Carousel -->
+<div class="mb-5">
+<label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-2.5">Caption Style Preset Library</label>
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2.5">
+<!-- Preset: Off -->
+<div class="bg-obsidian-950/70 hover:bg-obsidian-850 border border-obsidian-750 rounded-xl p-2.5 text-center cursor-pointer transition">
+<div class="h-10 flex items-center justify-center font-mono text-xs text-slate-500 font-bold">OFF</div>
+<p class="text-[11px] font-semibold text-slate-300 truncate">No Caption</p>
+<p class="text-[9px] text-slate-500">Disabled</p>
+</div>
+<!-- Preset: Bold -->
+<div class="bg-obsidian-950/70 hover:bg-obsidian-850 border border-obsidian-750 rounded-xl p-2.5 text-center cursor-pointer transition">
+<div class="h-10 flex items-center justify-center font-sans font-black text-xs text-white">BOLD</div>
+<p class="text-[11px] font-semibold text-slate-300 truncate">Bold Pop</p>
+<p class="text-[9px] text-slate-500">Poppins Clean</p>
+</div>
+<!-- Preset: BEAST (Active) -->
+<div class="bg-obsidian-800 border-2 border-yellow-400 rounded-xl p-2.5 text-center cursor-pointer shadow-lg shadow-yellow-500/10">
+<div class="h-10 flex items-center justify-center">
+<span class="bg-yellow-400 text-black px-2 py-0.5 rounded font-black text-xs tracking-wider uppercase">BEAST</span>
+</div>
+<p class="text-[11px] font-bold text-yellow-400 truncate">Beast Viral</p>
+<p class="text-[9px] text-slate-300">Heavy Drop Shadow</p>
+</div>
+<!-- Preset: Hustle -->
+<div class="bg-obsidian-950/70 hover:bg-obsidian-850 border border-obsidian-750 rounded-xl p-2.5 text-center cursor-pointer transition">
+<div class="h-10 flex items-center justify-center">
+<span class="text-emerald-400 font-black italic tracking-wide text-xs">HUSTLE</span>
+</div>
+<p class="text-[11px] font-semibold text-slate-300 truncate">Hustle Kinetic</p>
+<p class="text-[9px] text-slate-500">Uppercase Speed</p>
+</div>
+<!-- Preset: PupCaps -->
+<div class="bg-obsidian-950/70 hover:bg-obsidian-850 border border-obsidian-750 rounded-xl p-2.5 text-center cursor-pointer transition">
+<div class="h-10 flex items-center justify-center">
+<span class="text-amber-300 font-extrabold text-xs underline decoration-amber-500 underline-offset-2">PUPCAPS</span>
+</div>
+<p class="text-[11px] font-semibold text-slate-300 truncate">PupCaps</p>
+<p class="text-[9px] text-slate-500">Live Karaoke Bar</p>
+</div>
+<!-- Preset: Highlight -->
+<div class="bg-obsidian-950/70 hover:bg-obsidian-850 border border-obsidian-750 rounded-xl p-2.5 text-center cursor-pointer transition">
+<div class="h-10 flex items-center justify-center">
+<span class="bg-violet-600 text-white font-bold text-[11px] px-1.5 py-0.5 rounded">HIGHLIGHT</span>
+</div>
+<p class="text-[11px] font-semibold text-slate-300 truncate">Bold Highlight</p>
+<p class="text-[9px] text-slate-500">Active Pop Word</p>
+</div>
+<!-- Preset: Podcast -->
+<div class="bg-obsidian-950/70 hover:bg-obsidian-850 border border-obsidian-750 rounded-xl p-2.5 text-center cursor-pointer transition">
+<div class="h-10 flex items-center justify-center">
+<span class="text-cyan-300 font-medium text-xs tracking-wider">PODCAST</span>
+</div>
+<p class="text-[11px] font-semibold text-slate-300 truncate">Podcast Float</p>
+<p class="text-[9px] text-slate-500">Subtle Understate</p>
+</div>
+<!-- Preset: Aarit -->
+<div class="bg-obsidian-950/70 hover:bg-obsidian-850 border border-obsidian-750 rounded-xl p-2.5 text-center cursor-pointer transition">
+<div class="h-10 flex items-center justify-center">
+<span class="text-orange-400 font-extrabold text-xs tracking-widest">AARIT</span>
+</div>
+<p class="text-[11px] font-semibold text-slate-300 truncate">Aarit 3D</p>
+<p class="text-[9px] text-slate-500">Zoom in Motion</p>
+</div>
+<!-- Preset: Gaming Neon -->
+<div class="bg-obsidian-950/70 hover:bg-obsidian-850 border border-obsidian-750 rounded-xl p-2.5 text-center cursor-pointer transition">
+<div class="h-10 flex items-center justify-center">
+<span class="text-pink-400 font-mono font-bold text-xs shadow-glow-accent">GAMING</span>
+</div>
+<p class="text-[11px] font-semibold text-slate-300 truncate">Cyber Neon</p>
+<p class="text-[9px] text-slate-500">Glow Outline</p>
+</div>
+</div>
+</div>
+<!-- Interactive Split Studio: Preview Canvas + Interactive Script Editor -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+<!-- Left: High-Fidelity Video Preview Canvas (7 cols) -->
+<div class="lg:col-span-7 flex flex-col justify-between bg-obsidian-950 rounded-xl border border-obsidian-750 overflow-hidden relative min-h-[380px] group">
+<!-- Canvas Top Utility Toolbar -->
+<div class="absolute top-0 inset-x-0 bg-gradient-to-b from-black/80 to-transparent p-3 flex items-center justify-between z-20">
+<div class="flex items-center gap-2">
+<span class="bg-black/60 backdrop-blur-md text-[10px] font-mono text-slate-300 px-2 py-0.5 rounded border border-white/10">1080 × 1920 (9:16 Canvas)</span>
+<span class="bg-emerald-500/20 text-emerald-400 text-[10px] font-mono px-2 py-0.5 rounded border border-emerald-500/30">Live Sync</span>
+</div>
+<div class="flex items-center gap-1.5 bg-black/60 backdrop-blur-md rounded-lg p-1 border border-white/10 text-xs">
+<button class="p-1 hover:text-brand-primary" title="Scale 50%">50%</button>
+<button class="p-1 text-brand-primary font-bold" title="Fit Window">FIT</button>
+<button class="p-1 hover:text-brand-primary" title="Scale 100%">100%</button>
+</div>
+</div>
+<!-- Video Viewport / Canvas Sim -->
+<div class="relative w-full h-full flex-1 flex items-center justify-center bg-gradient-to-b from-obsidian-900 via-obsidian-950 to-obsidian-900 p-8 min-h-[300px]">
+<!-- Visual Grid Overlay -->
+<div class="absolute inset-0 bg-[radial-gradient(#232940_1px,transparent_1px)] [background-size:16px_16px] opacity-20"></div>
+<!-- Kinetic Subtitle Overlay Preview -->
+<div class="relative z-10 text-center max-w-lg select-none transform transition-transform hover:scale-105 cursor-move" title="Drag to reposition caption box">
+<div class="caption-highlight-beast text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-white flex flex-wrap justify-center gap-x-3 gap-y-2">
+<span>YOU'VE</span>
+<span class="text-yellow-400 underline decoration-yellow-400/80 decoration-4">BEEN</span>
+<span class="text-yellow-400 underline decoration-yellow-400/80 decoration-4">EXHAUSTED</span>
+<span>ALL</span>
+<span class="text-white">DAY</span>
+</div>
+<div class="mt-4 inline-flex items-center gap-2 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 text-[10px] text-slate-400 font-mono">
+<span>[X: 540px, Y: 1420px]</span>
+<span class="w-1 h-1 rounded-full bg-brand-primary"></span>
+<span>Anchor: Center-Bottom</span>
+</div>
+</div>
+</div>
+<!-- Canvas Bottom Control Shelf -->
+<div class="bg-obsidian-900 border-t border-obsidian-750 px-4 py-3 flex items-center justify-between z-20">
+<button class="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>Reset position</span>
+</button>
+<!-- Font Size Scrubber -->
+<div class="flex items-center gap-3">
+<span class="text-xs text-slate-400 font-mono">A-</span>
+<input class="w-32 accent-brand-primary cursor-pointer h-1.5 bg-obsidian-750 rounded-lg" max="72" min="24" type="range" value="48"/>
+<span class="text-xs text-slate-400 font-mono">A+</span>
+<span class="text-xs font-mono font-semibold text-brand-primary bg-brand-primary/10 px-2 py-0.5 rounded border border-brand-primary/20">48px</span>
+</div>
+</div>
+</div>
+<!-- Right: Timestamped Interactive Script Editor (5 cols) -->
+<div class="lg:col-span-5 bg-obsidian-950 rounded-xl border border-obsidian-750 p-4 flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between pb-3 border-b border-obsidian-750 mb-3">
+<div class="flex items-center gap-2">
+<span class="text-xs font-bold text-slate-200 uppercase tracking-wide">Timestamped Script</span>
+<span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">Aligned</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[10px] text-slate-400">Language:</span>
+<select class="bg-obsidian-850 text-slate-300 text-[11px] rounded border border-obsidian-700 px-2 py-0.5">
+<option>Auto-detect (Whisper)</option>
+<option>English (US)</option>
+<option>Spanish</option>
+<option>German</option>
+</select>
+</div>
+</div>
+<!-- Timestamped script line editor -->
+<div class="space-y-2 max-h-[260px] overflow-y-auto pr-1 font-mono text-xs">
+<!-- Script Line 1 -->
+<div class="p-2.5 rounded-lg bg-obsidian-850/90 border border-brand-primary/40 flex items-start gap-2.5">
+<span class="px-1.5 py-0.5 rounded bg-brand-primary/20 text-brand-primary font-bold text-[11px] shrink-0">0:03</span>
+<p class="text-slate-200 leading-relaxed font-sans text-xs">You've been exhausted all day</p>
+</div>
+<!-- Script Line 2 -->
+<div class="p-2.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-850 border border-obsidian-750 flex items-start gap-2.5 transition">
+<span class="px-1.5 py-0.5 rounded bg-obsidian-750 text-slate-400 font-bold text-[11px] shrink-0">0:07</span>
+<p class="text-slate-400 hover:text-slate-200 leading-relaxed font-sans text-xs">That achiness in your body</p>
+</div>
+<!-- Script Line 3 -->
+<div class="p-2.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-850 border border-obsidian-750 flex items-start gap-2.5 transition">
+<span class="px-1.5 py-0.5 rounded bg-obsidian-750 text-slate-400 font-bold text-[11px] shrink-0">0:12</span>
+<p class="text-slate-400 hover:text-slate-200 leading-relaxed font-sans text-xs">Switching on like a stadium light</p>
+</div>
+<!-- Script Line 4 -->
+<div class="p-2.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-850 border border-obsidian-750 flex items-start gap-2.5 transition">
+<span class="px-1.5 py-0.5 rounded bg-obsidian-750 text-slate-400 font-bold text-[11px] shrink-0">0:18</span>
+<p class="text-slate-400 hover:text-slate-200 leading-relaxed font-sans text-xs">Your brain refuses to shut down tonight</p>
+</div>
+</div>
+</div>
+<!-- Bottom Action Buttons for Script -->
+<div class="pt-4 border-t border-obsidian-750 flex flex-wrap items-center justify-between gap-2">
+<div class="flex items-center gap-2">
+<button class="px-2.5 py-1.5 bg-obsidian-850 hover:bg-obsidian-750 text-slate-300 text-xs font-medium rounded-lg border border-obsidian-700 flex items-center gap-1.5 transition">
+<svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+                Load .txt
+              </button>
+<button class="px-2.5 py-1.5 bg-obsidian-850 hover:bg-obsidian-750 text-slate-300 text-xs font-medium rounded-lg border border-obsidian-700 flex items-center gap-1.5 transition">
+<svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+                Upload SRT / VTT
+              </button>
+</div>
+<button class="px-3 py-1.5 bg-brand-primary/20 hover:bg-brand-primary/30 text-brand-primary border border-brand-primary/40 text-xs font-bold rounded-lg flex items-center gap-1.5 transition">
+<svg class="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+              Auto-Sync AI
+            </button>
+</div>
+</div>
+</div>
+</section>
+<!-- END: Section3_CaptionsStudio -->
+<!-- BEGIN: Section4_PrecisionTimeline -->
+<section class="border-gradient-glow rounded-2xl bg-obsidian-900/80 p-5 backdrop-blur-md shadow-2xl relative" data-purpose="nle-precision-timeline">
+<div class="flex flex-wrap items-center justify-between pb-4 border-b border-obsidian-750 mb-4 gap-3">
+<div class="flex items-center gap-3">
+<span class="flex items-center justify-center w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 font-mono text-xs font-bold">04</span>
+<div>
+<h2 class="text-sm font-bold uppercase tracking-wider text-slate-100 flex items-center gap-2">
+              Precision Multi-Track Timeline
+              <span class="text-[10px] font-mono text-slate-400">Total Duration: 00:00:24.12</span>
+</h2>
+</div>
+</div>
+<!-- Playback Controller & Zoom Controls -->
+<div class="flex items-center gap-4">
+<!-- Mini Transport Controls -->
+<div class="flex items-center gap-1 bg-obsidian-950 p-1 rounded-xl border border-obsidian-700">
+<button class="p-1.5 text-slate-400 hover:text-white hover:bg-obsidian-800 rounded" title="Previous Keyframe">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.334 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+<button class="p-1.5 text-white bg-brand-primary hover:bg-brand-primary/80 rounded" title="Play / Pause Spacebar">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 20 20">
+<path clip-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" fill-rule="evenodd"></path>
+</svg>
+</button>
+<button class="p-1.5 text-slate-400 hover:text-white hover:bg-obsidian-800 rounded" title="Next Keyframe">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M11.933 12.8a1 1 0 000-1.6L6.6 7.2A1 1 0 005 8v8a1 1 0 001.6.8l5.333-4zM19.933 12.8a1 1 0 000-1.6l-5.333-4A1 1 0 0013 8v8a1 1 0 001.6.8l5.333-4z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+<!-- Timeline Timecode -->
+<div class="font-mono text-sm font-bold text-brand-cyan bg-obsidian-950 px-3 py-1.5 rounded-lg border border-obsidian-750">
+            00:00:03.14
+          </div>
+<!-- Timeline Zoom Slider -->
+<div class="hidden sm:flex items-center gap-2 text-slate-400 text-xs font-mono">
+<span>-</span>
+<input class="w-24 accent-brand-primary cursor-pointer h-1 bg-obsidian-750 rounded" type="range"/>
+<span>+</span>
+</div>
+<!-- Legend Tags -->
+<div class="hidden md:flex items-center gap-3 text-[11px] font-mono">
+<span class="flex items-center gap-1.5 text-slate-300">
+<span class="w-2 h-2 rounded bg-indigo-500"></span> Image
+            </span>
+<span class="flex items-center gap-1.5 text-slate-300">
+<span class="w-2 h-2 rounded bg-cyan-400"></span> Video
+            </span>
+<span class="flex items-center gap-1.5 text-slate-300">
+<span class="w-2 h-2 rounded bg-purple-500"></span> Audio
+            </span>
+</div>
+</div>
+</div>
+<!-- High-Density Track Deck -->
+<div class="bg-obsidian-950/90 rounded-xl border border-obsidian-750 overflow-hidden p-3 space-y-2.5">
+<!-- Track 1: Audio Voiceover Track with Simulated Real-Time Waveform -->
+<div class="rounded-lg bg-obsidian-900 border border-obsidian-750/80 p-2.5">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<span class="px-1.5 py-0.5 rounded bg-brand-primary/20 text-brand-primary font-mono text-[10px] font-bold">A1</span>
+<span class="text-xs font-semibold text-slate-300">Voiceover Master Audio</span>
+<span class="text-[10px] font-mono text-slate-500">voiceover_final_master.wav</span>
+</div>
+<div class="flex items-center gap-2 text-[10px] font-mono text-slate-400">
+<span>dB: -3.2</span>
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+</div>
+</div>
+<!-- Dynamic Audio Waveform Strip -->
+<div class="h-10 w-full bg-obsidian-950 rounded border border-obsidian-750/50 flex items-center px-2 gap-[2px] overflow-hidden relative">
+<!-- Simulated Waveform Bars -->
+<div class="w-1 bg-brand-primary/70 h-3 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-primary/80 h-5 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-primary h-7 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-primary h-9 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-primary/90 h-6 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-primary/60 h-2 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-primary/90 h-8 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-primary h-10 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-cyan h-9 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-cyan h-7 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-cyan h-4 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-cyan/80 h-8 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-primary/80 h-6 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-primary/50 h-3 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-primary/90 h-8 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-primary h-10 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-primary h-7 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-primary/80 h-5 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-primary/60 h-2 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-primary/70 h-4 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-primary/90 h-8 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-cyan h-9 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-cyan h-6 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-cyan/70 h-3 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-primary/80 h-7 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-primary h-9 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-primary h-8 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-primary/70 h-4 rounded-full waveform-bar"></div>
+<div class="w-1 bg-brand-primary/50 h-2 rounded-full waveform-bar"></div>
+<!-- Playhead scrubber line representation -->
+<div class="absolute left-1/4 inset-y-0 w-0.5 bg-rose-500 shadow-glow-accent z-10 flex flex-col items-center">
+<div class="w-2.5 h-2 bg-rose-500 rounded-b"></div>
+</div>
+</div>
+</div>
+<!-- Track 2: Visual Media Sequence Lane -->
+<div class="rounded-lg bg-obsidian-900 border border-obsidian-750/80 p-2.5">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<span class="px-1.5 py-0.5 rounded bg-brand-cyan/20 text-brand-cyan font-mono text-[10px] font-bold">V1</span>
+<span class="text-xs font-semibold text-slate-300">Visual Sequencer</span>
+<span class="text-[10px] font-mono text-slate-500">4 Segments Synced</span>
+</div>
+<span class="text-[10px] font-mono text-brand-cyan">Auto Pan Active</span>
+</div>
+<!-- Sequence Clips Row -->
+<div class="grid grid-cols-12 gap-1.5 h-16">
+<!-- Clip 1 -->
+<div class="col-span-3 bg-gradient-to-r from-indigo-900/60 to-indigo-800/40 border border-indigo-500/40 rounded-lg p-2 flex flex-col justify-between relative group hover:border-brand-primary transition cursor-pointer">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-mono font-bold text-white truncate">0_00-0_03.png</span>
+<span class="text-[9px] font-mono bg-indigo-500/40 px-1 rounded text-indigo-200">3.0s</span>
+</div>
+<div class="flex items-center justify-between text-[9px] text-slate-400 font-mono">
+<span>Pan In</span>
+<span class="text-emerald-400">Hard Cut</span>
+</div>
+</div>
+<!-- Clip 2 -->
+<div class="col-span-4 bg-gradient-to-r from-violet-900/60 to-violet-800/40 border border-violet-500/40 rounded-lg p-2 flex flex-col justify-between relative group hover:border-brand-violet transition cursor-pointer">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-mono font-bold text-white truncate">0_03-0_07.png</span>
+<span class="text-[9px] font-mono bg-violet-500/40 px-1 rounded text-violet-200">4.0s</span>
+</div>
+<div class="flex items-center justify-between text-[9px] text-slate-400 font-mono">
+<span>Zoom Out</span>
+<span class="text-indigo-400">Cut</span>
+</div>
+</div>
+<!-- Clip 3 -->
+<div class="col-span-3 bg-gradient-to-r from-cyan-900/60 to-cyan-800/40 border border-cyan-500/40 rounded-lg p-2 flex flex-col justify-between relative group hover:border-brand-cyan transition cursor-pointer">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-mono font-bold text-white truncate">0_07-0_12.png</span>
+<span class="text-[9px] font-mono bg-cyan-500/40 px-1 rounded text-cyan-200">5.0s</span>
+</div>
+<div class="flex items-center justify-between text-[9px] text-slate-400 font-mono">
+<span>Ken Burns</span>
+<span class="text-indigo-400">Cut</span>
+</div>
+</div>
+<!-- Clip 4 -->
+<div class="col-span-2 bg-gradient-to-r from-purple-900/60 to-purple-800/40 border border-purple-500/40 rounded-lg p-2 flex flex-col justify-between relative group hover:border-purple-400 transition cursor-pointer">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-mono font-bold text-white truncate">0_12-0_15.png</span>
+<span class="text-[9px] font-mono bg-purple-500/40 px-1 rounded text-purple-200">3.0s</span>
+</div>
+<div class="flex items-center justify-between text-[9px] text-slate-400 font-mono">
+<span>Shake</span>
+<span class="text-rose-400">End</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: Section4_PrecisionTimeline -->
+<!-- BEGIN: Section5_ExportDock -->
+<section class="border-gradient-glow rounded-2xl bg-obsidian-900/90 p-5 backdrop-blur-md shadow-2xl relative mb-10" data-purpose="export-generation-dock">
+<div class="flex items-center justify-between pb-4 border-b border-obsidian-750 mb-5">
+<div class="flex items-center gap-3">
+<span class="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-mono text-xs font-bold">05</span>
+<div>
+<h2 class="text-sm font-bold uppercase tracking-wider text-slate-100 flex items-center gap-2">
+              Export Configuration &amp; High-Speed Render
+              <span class="text-[10px] font-mono text-brand-cyan bg-brand-cyan/10 px-2 py-0.5 rounded border border-brand-cyan/20">NVENC Ready</span>
+</h2>
+</div>
+</div>
+<div class="flex items-center gap-2 text-xs text-slate-400 font-mono">
+<span>Est. Render Time:</span>
+<span class="text-white font-bold bg-obsidian-800 px-2 py-1 rounded border border-obsidian-700">~1m 24s</span>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-5">
+<!-- Voiceover Sync Mode -->
+<div class="space-y-1.5">
+<label class="text-[11px] font-semibold text-slate-300 uppercase tracking-wider block">Voiceover Sync Mode</label>
+<div class="relative">
+<select class="w-full bg-obsidian-950 border border-obsidian-700 text-slate-200 text-xs rounded-lg px-3 py-2 pr-8 focus:border-brand-primary">
+<option selected="">Match video length — cut extra voiceover</option>
+<option>Match audio length — loop video frames</option>
+<option>Fit perfectly (Speed remap audio 1.05x)</option>
+</select>
+</div>
+</div>
+<!-- Export Filename -->
+<div class="space-y-1.5">
+<label class="text-[11px] font-semibold text-slate-300 uppercase tracking-wider block">Export Filename</label>
+<div class="flex rounded-lg overflow-hidden border border-obsidian-700 focus-within:border-brand-primary">
+<input class="w-full bg-obsidian-950 px-3 py-2 text-xs font-mono text-slate-200 border-none focus:ring-0" type="text" value="export_cinematic_story_v1"/>
+<span class="bg-obsidian-850 px-3 py-2 text-xs font-mono text-brand-primary font-bold border-l border-obsidian-750">.mp4</span>
+</div>
+</div>
+<!-- Destination Folder Picker -->
+<div class="space-y-1.5">
+<label class="text-[11px] font-semibold text-slate-300 uppercase tracking-wider block">Destination Folder</label>
+<div class="flex rounded-lg overflow-hidden border border-obsidian-700">
+<input class="w-full bg-obsidian-950 px-3 py-2 text-xs font-mono text-slate-400 border-none select-all focus:ring-0 truncate" readonly="" type="text" value="D:\Apps\video export\frame-maker\test\render_output"/>
+<button class="bg-obsidian-800 hover:bg-obsidian-750 px-3 py-2 text-xs font-semibold text-slate-200 border-l border-obsidian-700 shrink-0 transition">
+              Browse...
+            </button>
+</div>
+</div>
+</div>
+<!-- Quick Destination Bookmarks -->
+<div class="flex flex-wrap items-center justify-between pt-3 border-t border-obsidian-750/80 gap-3">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="text-xs text-slate-500 mr-1">Quick Path:</span>
+<button class="px-2.5 py-1 rounded bg-obsidian-850 hover:bg-obsidian-800 text-slate-300 text-xs font-mono border border-obsidian-700 transition">
+            📁 Render Output
+          </button>
+<button class="px-2.5 py-1 rounded bg-obsidian-850 hover:bg-obsidian-800 text-slate-300 text-xs font-mono border border-obsidian-700 transition">
+            📁 Exports
+          </button>
+<button class="px-2.5 py-1 rounded bg-obsidian-850 hover:bg-obsidian-800 text-slate-300 text-xs font-mono border border-obsidian-700 transition">
+            📁 Videos
+          </button>
+<button class="px-2.5 py-1 rounded bg-obsidian-850 hover:bg-obsidian-800 text-slate-300 text-xs font-mono border border-obsidian-700 transition">
+            📁 Desktop
+          </button>
+</div>
+<!-- Primary Generation CTA Button -->
+<div class="flex items-center gap-3">
+<button class="relative group overflow-hidden px-8 py-3.5 rounded-xl bg-gradient-to-r from-brand-primary via-brand-violet to-brand-cyan text-white text-sm font-bold shadow-glow-accent hover:brightness-110 active:scale-[0.98] transition-all flex items-center gap-2.5">
+<!-- Glow shine ripple effect -->
+<span class="absolute inset-0 w-full h-full bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"></span>
+<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"></path>
+<path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span class="tracking-wide">Create Video &amp; Start Render</span>
+</button>
+</div>
+</div>
+</section>
+<!-- END: Section5_ExportDock -->
+</main>
+<!-- Interactive State Controller (Script) -->
+<script data-purpose="studio-interactivity-handler">
+    document.addEventListener('DOMContentLoaded', () => {
+      // Small visual feedback helper for interactive preset cards
+      const presetCards = document.querySelectorAll('[data-purpose="captions-subtitles-studio"] .grid > div');
+      presetCards.forEach(card => {
+        card.addEventListener('click', () => {
+          presetCards.forEach(c => {
+            c.classList.remove('border-yellow-400', 'border-2', 'shadow-lg');
+            c.classList.add('border-obsidian-750');
+          });
+          card.classList.remove('border-obsidian-750');
+          card.classList.add('border-yellow-400', 'border-2', 'shadow-lg');
+        });
+      });
+    });
+  </script>
+</body></html>

@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Frame Maker — Script Splitter (StampHunter AI)</title>
+<!-- Font Setup: Plus Jakarta Sans & JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            obsidian: {
+              deepest: '#090a0f',
+              base: '#0d0e16',
+              surface: '#12131b',
+              container: '#1a1b26',
+              elevated: '#212230',
+              highlight: '#2c2d40',
+              border: '#282a3d',
+              borderHover: '#3b3d56',
+            },
+            accent: {
+              DEFAULT: '#6366f1',
+              hover: '#4f46e5',
+              glow: 'rgba(99, 102, 241, 0.25)',
+              soft: '#818cf8',
+              cyan: '#06b6d4',
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              rose: '#f43f5e',
+            }
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom Styles for Audio Waves, Sliders, and Glow Accents -->
+<style data-purpose="custom-styling">
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0d0e16;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #282a3d;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3b3d56;
+    }
+
+    /* Glow Accents */
+    .glow-indigo-sm {
+      box-shadow: 0 0 16px -2px rgba(99, 102, 241, 0.35);
+    }
+    .glow-indigo-subtle {
+      box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.2);
+    }
+    
+    /* Code Editor Line Numbers Gradient */
+    .line-numbers {
+      counter-reset: line;
+    }
+    .line-number-row::before {
+      counter-increment: line;
+      content: counter(line);
+      display: inline-block;
+      width: 2rem;
+      text-align: right;
+      margin-right: 1.25rem;
+      color: #4b4f69;
+      user-select: none;
+      font-size: 0.75rem;
+    }
+
+    /* Custom range input styling */
+    input[type=range] {
+      -webkit-appearance: none;
+      background: #282a3d;
+      border-radius: 9999px;
+      height: 4px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 14px;
+      width: 14px;
+      border-radius: 50%;
+      background: #6366f1;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(99, 102, 241, 0.6);
+      border: 2px solid #ffffff;
+    }
+  </style>
+</head>
+<body class="bg-obsidian-base text-slate-200 font-sans min-h-screen antialiased flex flex-col selection:bg-indigo-500/30 selection:text-indigo-200">
+<!-- BEGIN: GlobalNavigationBar -->
+<header class="border-b border-obsidian-border bg-obsidian-surface/85 backdrop-blur-md sticky top-0 z-50 px-4 lg:px-6 py-2.5 flex items-center justify-between gap-4">
+<!-- Brand & Platform Identity -->
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3">
+<!-- Logo Icon -->
+<div class="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-700 flex items-center justify-center shadow-lg shadow-indigo-600/30 border border-indigo-400/20">
+<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-extrabold tracking-tight text-white text-base">Frame<span class="text-indigo-400">Maker</span></span>
+<span class="px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">PRO v3.2</span>
+</div>
+<span class="text-[10px] tracking-wider font-semibold text-slate-400 block -mt-0.5">AI GENERATIVE VIDEO ENGINE</span>
+</div>
+</div>
+<!-- Navigation Tabs -->
+<nav aria-label="Main Navigation" class="hidden md:flex items-center space-x-1 pl-4 border-l border-obsidian-border/70">
+<a class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-obsidian-container transition-all" href="#">
+          Studio
+        </a>
+<a class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-obsidian-container transition-all" href="#">
+          Frame Hunter
+        </a>
+<!-- Active Tab: Script Splitter -->
+<a class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-600 shadow-md shadow-indigo-600/30 border border-indigo-400/30 flex items-center gap-1.5" href="#">
+<svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="10"></circle>
+<polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+          Script Splitter
+        </a>
+<a class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-obsidian-container transition-all flex items-center gap-1.5" href="#">
+          Prompt Hunter
+          <span class="px-1.5 py-0.2 text-[9px] font-bold rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">SOON</span>
+</a>
+<a class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-obsidian-container transition-all" href="#">
+          Automations
+        </a>
+</nav>
+</div>
+<!-- Telemetry, Project Selector & System Stats -->
+<div class="flex items-center gap-3">
+<!-- Project Dropdown -->
+<div class="hidden xl:flex items-center gap-2 bg-obsidian-container/80 border border-obsidian-border rounded-lg px-2.5 py-1.5 text-xs text-slate-300">
+<svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span class="text-slate-400">Project:</span>
+<span class="font-mono text-white font-medium">untitled_render_01</span>
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+</div>
+<!-- Live Hardware Telemetry Chips -->
+<div class="hidden sm:flex items-center gap-2">
+<div class="px-2.5 py-1 bg-obsidian-container border border-obsidian-border rounded-lg text-[11px] font-mono flex items-center gap-1.5">
+<span class="text-slate-400">GPU:</span>
+<span class="text-emerald-400 font-semibold">RTX 4090</span>
+</div>
+<div class="px-2.5 py-1 bg-obsidian-container border border-obsidian-border rounded-lg text-[11px] font-mono flex items-center gap-1.5">
+<span class="text-slate-400">CPU:</span>
+<span class="text-indigo-300 font-semibold">12%</span>
+<span class="text-slate-500 text-[10px]">(libx264)</span>
+</div>
+</div>
+<!-- History & State Action -->
+<button class="flex items-center gap-1.5 bg-obsidian-container hover:bg-obsidian-elevated text-slate-300 hover:text-white px-3 py-1.5 rounded-lg border border-obsidian-border text-xs font-medium transition" type="button">
+<svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>History (8)</span>
+</button>
+<!-- User or Session Badge -->
+<div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-700 to-purple-600 border border-indigo-400/30 flex items-center justify-center font-bold text-xs text-white shadow-inner">
+        SH
+      </div>
+</div>
+</header>
+<!-- END: GlobalNavigationBar -->
+<!-- BEGIN: ContextToolbar -->
+<section class="border-b border-obsidian-border/80 bg-obsidian-surface/40 px-4 lg:px-6 py-2 flex flex-wrap items-center justify-between gap-3 text-xs" data-purpose="breadcrumb-and-actions">
+<div class="flex items-center gap-2">
+<!-- StampHunter Branding Badge -->
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 font-semibold">
+<svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2.2" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="10"></circle>
+<polyline points="12 6 12 12 15 15"></polyline>
+</svg>
+<span>StampHunter AI</span>
+</div>
+<span class="text-slate-500">/</span>
+<span class="text-slate-300 font-medium tracking-wide">Script Splitter &amp; Precise Cadence Ingestion</span>
+</div>
+<!-- Quick Tool Actions -->
+<div class="flex items-center gap-2">
+<button class="px-2.5 py-1 rounded bg-obsidian-container hover:bg-obsidian-elevated border border-obsidian-border text-slate-300 hover:text-white transition flex items-center gap-1.5" type="button">
+<svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+        Save Project
+      </button>
+<button class="px-2.5 py-1 rounded bg-obsidian-container hover:bg-obsidian-elevated border border-obsidian-border text-slate-300 hover:text-white transition flex items-center gap-1.5" type="button">
+<svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+        Open Project
+      </button>
+<button class="px-2.5 py-1 rounded bg-obsidian-container hover:bg-rose-950/40 hover:border-rose-800/50 border border-obsidian-border text-slate-400 hover:text-rose-300 transition flex items-center gap-1.5" type="button">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+        Reset
+      </button>
+<div class="h-4 w-px bg-obsidian-border mx-1"></div>
+<button class="px-2.5 py-1 rounded bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 transition flex items-center gap-1.5" type="button">
+<svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+        Export SRT / JSON
+      </button>
+</div>
+</section>
+<!-- END: ContextToolbar -->
+<!-- BEGIN: MainWorkstationGrid -->
+<main class="flex-1 p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-[1720px] mx-auto w-full">
+<!-- LEFT SIDEBAR: Parameters & Model Engine Configuration -->
+<aside class="lg:col-span-4 xl:col-span-4 flex flex-col gap-5" data-purpose="parameters-sidebar">
+<!-- Card Container -->
+<div class="bg-obsidian-surface border border-obsidian-border rounded-xl p-5 shadow-xl flex flex-col gap-6">
+<!-- Sidebar Section Header -->
+<div class="flex items-center justify-between pb-3 border-b border-obsidian-border/80">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_#6366f1]"></span>
+<h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">Segmentation Engine Setup</h2>
+</div>
+<span class="text-[11px] text-slate-500 font-mono">v4.0.8-cuda</span>
+</div>
+<!-- Setting Group 1: Transcription Model Selection -->
+<div class="flex flex-col gap-2.5">
+<label class="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+<span>Transcription AI Model</span>
+<span class="text-[10px] text-indigo-400 font-mono font-medium">99.4% Accuracy</span>
+</label>
+<!-- Model Card: Active -->
+<div class="relative bg-gradient-to-b from-indigo-950/30 to-obsidian-container border-2 border-indigo-500/60 rounded-xl p-3.5 shadow-md glow-indigo-subtle cursor-pointer transition hover:border-indigo-400">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center text-indigo-300">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div>
+<h3 class="text-sm font-semibold text-white flex items-center gap-1.5">
+                    StampHunter AI Neural
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+</h3>
+<p class="text-[11px] text-slate-400 mt-0.5">Reads and splits voiceover with high cadence fidelity</p>
+</div>
+</div>
+</div>
+<!-- Model micro tags -->
+<div class="mt-3 pt-2.5 border-t border-indigo-500/20 flex items-center justify-between text-[11px] text-slate-400">
+<span class="flex items-center gap-1">
+<svg class="w-3 h-3 text-emerald-400" fill="currentColor" viewbox="0 0 20 20">
+<path clip-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" fill-rule="evenodd"></path>
+</svg>
+                Acoustic Phoneme Matcher
+              </span>
+<span class="font-mono text-indigo-300">TensorRT v10</span>
+</div>
+</div>
+<!-- Secondary Model Option Pills -->
+<div class="grid grid-cols-2 gap-2 mt-1">
+<button class="p-2 rounded-lg bg-obsidian-container hover:bg-obsidian-elevated border border-obsidian-border text-left text-xs transition" type="button">
+<div class="font-medium text-slate-300">Whisper Large-v3</div>
+<div class="text-[10px] text-slate-500">Zero-shot Beam Search</div>
+</button>
+<button class="p-2 rounded-lg bg-obsidian-container hover:bg-obsidian-elevated border border-obsidian-border text-left text-xs transition" type="button">
+<div class="font-medium text-slate-300">Fast Whisper Turbo</div>
+<div class="text-[10px] text-slate-500">Low Latency Drafts</div>
+</button>
+</div>
+</div>
+<!-- Setting Group 2: Voiceover Language Selector -->
+<div class="flex flex-col gap-2">
+<label class="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+<span>Voiceover Language</span>
+<span class="text-[11px] text-emerald-400 font-mono flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> 99.8% Conf.
+            </span>
+</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+<svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="10"></circle>
+<line x1="2" x2="22" y1="12" y2="12"></line>
+<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+</svg>
+</div>
+<select class="w-full pl-9 pr-8 py-2 bg-obsidian-container border border-obsidian-border focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg text-xs font-medium text-slate-200 cursor-pointer">
+<option selected="">Auto-detect (99 languages supported)</option>
+<option>English (United States / Global)</option>
+<option>Spanish (Español)</option>
+<option>German (Deutsch)</option>
+<option>French (Français)</option>
+<option>Japanese (日本語)</option>
+<option>Portuguese (Português)</option>
+</select>
+</div>
+<p class="text-[11px] text-slate-500 leading-relaxed">
+            StampHunter AI dynamically parses native phonetic stops and vocal inflections to determine exact language tags.
+          </p>
+</div>
+<!-- Setting Group 3: Inference Accuracy Mode -->
+<div class="flex flex-col gap-2">
+<label class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Accuracy &amp; Performance</label>
+<div class="grid grid-cols-2 p-1 bg-obsidian-container border border-obsidian-border rounded-xl gap-1">
+<button class="py-2 px-3 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow-md flex items-center justify-center gap-1.5 transition" type="button">
+<span>Fast</span>
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-300"></span>
+</button>
+<button class="py-2 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-white flex items-center justify-center gap-1.5 transition" type="button">
+<span>Best (Multi-pass)</span>
+<span class="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
+</button>
+</div>
+</div>
+<!-- Setting Group 4: Timestamp Granularity Rules -->
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<label class="text-[11px] font-bold uppercase tracking-wider text-slate-400">New Timestamp Cadence</label>
+<span class="text-[10px] text-indigo-400 font-mono">Dynamic Mode</span>
+</div>
+<!-- Segment Cadence Buttons -->
+<div class="grid grid-cols-4 gap-1.5 bg-obsidian-container/80 p-1 border border-obsidian-border rounded-lg">
+<button class="py-1.5 text-xs font-bold rounded-md bg-indigo-600 text-white shadow" type="button">
+              ~3s
+            </button>
+<button class="py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-white hover:bg-obsidian-elevated" type="button">
+              ~5s
+            </button>
+<button class="py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-white hover:bg-obsidian-elevated" type="button">
+              Sentence
+            </button>
+<button class="py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-white hover:bg-obsidian-elevated" type="button">
+              Custom
+            </button>
+</div>
+<!-- Words Per Cut Slider -->
+<div class="bg-obsidian-container/50 border border-obsidian-border/70 rounded-lg p-3">
+<div class="flex justify-between items-center text-xs mb-2">
+<span class="text-slate-300 font-medium">Max words per card</span>
+<span class="font-mono text-indigo-400 font-bold text-xs">3 - 5 words</span>
+</div>
+<input class="w-full" max="10" min="1" type="range" value="4"/>
+<div class="flex justify-between text-[10px] text-slate-500 mt-1 font-mono">
+<span>Rapid (1-2)</span>
+<span>Balanced (3-5)</span>
+<span>Long (7-10)</span>
+</div>
+</div>
+<!-- Smart Heuristic Constraints (Checkboxes) -->
+<div class="space-y-2.5 pt-1">
+<label class="flex items-start gap-2.5 cursor-pointer group">
+<input checked="" class="mt-0.5 rounded border-obsidian-border text-indigo-600 focus:ring-indigo-500 bg-obsidian-container w-4 h-4" type="checkbox"/>
+<div class="flex flex-col">
+<span class="text-xs font-medium text-slate-200 group-hover:text-white">Avoid cutting mid-sentence (±1s)</span>
+<span class="text-[11px] text-slate-500">Preserves natural vocal breath and logical flow</span>
+</div>
+</label>
+<label class="flex items-start gap-2.5 cursor-pointer group">
+<input checked="" class="mt-0.5 rounded border-obsidian-border text-indigo-600 focus:ring-indigo-500 bg-obsidian-container w-4 h-4" type="checkbox"/>
+<div class="flex flex-col">
+<span class="text-xs font-medium text-slate-200 group-hover:text-white">Split strictly at punctuation markers</span>
+<span class="text-[11px] text-slate-500">Forces break on periods, commas, question marks</span>
+</div>
+</label>
+</div>
+</div>
+<!-- Primary Action Trigger CTA -->
+<div class="pt-2 flex flex-col gap-2">
+<button class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-violet-600 hover:from-indigo-400 hover:to-violet-500 text-white font-bold text-sm tracking-wide shadow-lg shadow-indigo-600/40 border border-indigo-300/30 flex items-center justify-center gap-2 transition transform active:scale-[0.99] glow-indigo-sm" type="button">
+<svg class="w-4 h-4 text-white animate-pulse" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>Get Timestamps &amp; Split Script</span>
+</button>
+<div class="flex items-center justify-between text-[11px] text-slate-500 px-1 font-mono">
+<span>Estimated Duration: <strong class="text-slate-300 font-normal">~4.2s ETA</strong></span>
+<span class="text-emerald-400 flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Engine Ready
+            </span>
+</div>
+</div>
+</div>
+</aside>
+<!-- RIGHT MAIN CANVAS: Audio Ingestion, Synchronizer, & Live Segments Preview -->
+<section class="lg:col-span-8 xl:col-span-8 flex flex-col gap-6" data-purpose="workstation-canvas">
+<!-- BLOCK 1: Audio Voiceover Ingestion Zone with Active Track State -->
+<div class="bg-obsidian-surface border border-obsidian-border rounded-xl p-5 shadow-xl flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#06b6d4]"></span>
+<h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">Voiceover Master Audio</h2>
+</div>
+<span class="text-xs text-slate-500 font-mono">mp3, wav, m4a, flac, ogg</span>
+</div>
+<!-- Loaded Audio Player Deck with Waveform Visualization -->
+<div class="bg-obsidian-container border border-obsidian-border/90 rounded-xl p-4 flex flex-col gap-3">
+<div class="flex flex-wrap items-center justify-between gap-3">
+<div class="flex items-center gap-3">
+<!-- Play / Pause Circle -->
+<button class="w-10 h-10 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30 transition" type="button">
+<svg class="w-4 h-4 translate-x-0.5" fill="currentColor" viewbox="0 0 24 24">
+<path d="M8 5v14l11-7z"></path>
+</svg>
+</button>
+<!-- File Meta -->
+<div>
+<div class="flex items-center gap-2">
+<span class="font-mono text-sm font-semibold text-white">voiceover_sample_01.wav</span>
+<span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">SYNC READY</span>
+</div>
+<div class="flex items-center gap-3 text-[11px] text-slate-400 mt-0.5 font-mono">
+<span>48.0 kHz</span>
+<span>•</span>
+<span>24-bit Stereo</span>
+<span>•</span>
+<span>1411 kbps</span>
+</div>
+</div>
+</div>
+<!-- Timecodes and Switch Actions -->
+<div class="flex items-center gap-3">
+<div class="font-mono text-xs text-right">
+<div class="text-indigo-400 font-bold text-sm">00:03.12 <span class="text-slate-500 font-normal">/ 01:24.00</span></div>
+<div class="text-[10px] text-slate-500">Elapsed / Total</div>
+</div>
+<button class="px-2.5 py-1.5 rounded-lg bg-obsidian-elevated hover:bg-obsidian-highlight text-slate-300 hover:text-white border border-obsidian-border text-xs font-medium transition flex items-center gap-1.5" type="button">
+<svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+                Replace
+              </button>
+</div>
+</div>
+<!-- Interactive Waveform Graphic Representation -->
+<div class="relative bg-obsidian-deepest rounded-lg p-3 border border-obsidian-border overflow-hidden">
+<!-- Simulated Waveform Bars -->
+<div class="flex items-center justify-between gap-[2px] h-12 w-full opacity-90">
+<!-- Past / Played Section (Indigo) -->
+<span class="w-1 bg-indigo-500 h-3 rounded-full"></span>
+<span class="w-1 bg-indigo-500 h-5 rounded-full"></span>
+<span class="w-1 bg-indigo-500 h-8 rounded-full"></span>
+<span class="w-1 bg-indigo-500 h-10 rounded-full"></span>
+<span class="w-1 bg-indigo-500 h-6 rounded-full"></span>
+<span class="w-1 bg-indigo-500 h-11 rounded-full"></span>
+<span class="w-1 bg-indigo-500 h-9 rounded-full"></span>
+<span class="w-1 bg-indigo-500 h-4 rounded-full"></span>
+<span class="w-1 bg-indigo-500 h-7 rounded-full"></span>
+<span class="w-1 bg-indigo-500 h-12 rounded-full"></span>
+<span class="w-1 bg-indigo-400 h-10 rounded-full"></span>
+<!-- Scrubber Playhead Point -->
+<div class="relative h-14 w-[2px] bg-white shadow-[0_0_10px_#ffffff]">
+<div class="absolute -top-1 -left-1.5 w-3.5 h-3.5 bg-indigo-500 border-2 border-white rounded-full"></div>
+</div>
+<!-- Upcoming Audio Bars (Dimmed Obsidian/Slate) -->
+<span class="w-1 bg-slate-700 h-8 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-5 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-9 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-11 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-7 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-10 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-4 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-8 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-11 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-6 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-3 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-9 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-12 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-7 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-5 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-10 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-6 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-4 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-8 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-5 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-9 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-11 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-7 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-3 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-6 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-9 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-4 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-7 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-10 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-5 rounded-full"></span>
+<span class="w-1 bg-slate-700 h-2 rounded-full"></span>
+</div>
+</div>
+<div class="flex items-center justify-between text-[11px] text-slate-500">
+<span class="flex items-center gap-1.5">
+<svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+              Audio ingested directly to local GPU worker memory (no external upload latency)
+            </span>
+<span class="font-mono text-slate-400">Peak dB: -1.2 dBFS</span>
+</div>
+</div>
+</div>
+<!-- BLOCK 2: Script Synchronizer Deck (Optional Ground Truth / Reference Script) -->
+<div class="bg-obsidian-surface border border-obsidian-border rounded-xl p-5 shadow-xl flex flex-col gap-4">
+<div class="flex flex-wrap items-center justify-between gap-3">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-indigo-400 shadow-[0_0_8px_#6366f1]"></span>
+<h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">Original Script Reference <span class="text-slate-500 font-normal lowercase">(Optional)</span></h2>
+</div>
+<!-- Tabs: Raw Script / Upload SRT -->
+<div class="flex items-center gap-2">
+<div class="flex items-center p-0.5 bg-obsidian-container border border-obsidian-border rounded-lg text-xs">
+<button class="px-2.5 py-1 rounded bg-obsidian-elevated text-white font-medium shadow-sm" type="button">
+                Monospace Editor
+              </button>
+<button class="px-2.5 py-1 rounded text-slate-400 hover:text-white transition" type="button">
+                Pre-timed Tags
+              </button>
+</div>
+<button class="px-3 py-1 bg-obsidian-container hover:bg-obsidian-elevated border border-obsidian-border text-slate-200 rounded-lg text-xs font-medium flex items-center gap-1.5 transition" type="button">
+<svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+              Upload SRT / VTT
+            </button>
+</div>
+</div>
+<!-- High-Fidelity Monospace Code/Script Ingestion Window -->
+<div class="bg-obsidian-container border border-obsidian-border rounded-xl p-3.5 flex flex-col font-mono text-xs">
+<!-- Window Header Bar -->
+<div class="flex items-center justify-between pb-2.5 mb-2.5 border-b border-obsidian-border/70 text-[11px] text-slate-500">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-slate-600"></span>
+<span class="text-slate-400 font-sans">Exact wording ground-truth for auto-alignment</span>
+</div>
+<div class="flex items-center gap-3">
+<span>Lines: <strong class="text-slate-300">4</strong></span>
+<span>Words: <strong class="text-slate-300">28</strong></span>
+</div>
+</div>
+<!-- Code Script Area with Line Numbers -->
+<div class="line-numbers text-slate-300 space-y-1.5 py-1">
+<div class="line-number-row flex items-center">
+<span class="text-indigo-400 font-semibold">(0:00)</span>
+<span class="ml-2 text-white">It's a random Tuesday.</span>
+</div>
+<div class="line-number-row flex items-center">
+<span class="text-indigo-400 font-semibold">(0:03)</span>
+<span class="ml-2 text-white">You've been exhausted all day long.</span>
+</div>
+<div class="line-number-row flex items-center">
+<span class="text-indigo-400 font-semibold">(0:07)</span>
+<span class="ml-2 text-white">That achiness in your body begins to settle in.</span>
+</div>
+<div class="line-number-row flex items-center">
+<span class="text-indigo-400 font-semibold">(0:12)</span>
+<span class="ml-2 text-white">Switching on like a stadium light out of nowhere.</span>
+</div>
+</div>
+<!-- Action bar underneath editor -->
+<div class="mt-3 pt-2.5 border-t border-obsidian-border/60 flex flex-wrap items-center justify-between gap-2 font-sans text-xs">
+<div class="flex items-center gap-2">
+<button class="px-2 py-1 rounded bg-obsidian-elevated hover:bg-obsidian-highlight text-slate-300 text-[11px] transition" type="button">
+                ⚡ Auto-Fix Punctuation
+              </button>
+<button class="px-2 py-1 rounded bg-obsidian-elevated hover:bg-obsidian-highlight text-slate-300 text-[11px] transition" type="button">
+                Clean Hallucinations
+              </button>
+</div>
+<span class="text-[11px] text-slate-500">
+              Matches timestamps to script exact text vocabulary.
+            </span>
+</div>
+</div>
+</div>
+<!-- BLOCK 3: Live Split Preview & Cue Cards Inspector -->
+<div class="bg-obsidian-surface border border-obsidian-border rounded-xl p-5 shadow-xl flex flex-col gap-4">
+<div class="flex flex-wrap items-center justify-between gap-3">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]"></span>
+<h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">Generated Timestamped Segments (3 Cue Cards)</h2>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[11px] text-slate-400 font-mono">Sync Status: <span class="text-emerald-400 font-bold">LOCKED</span></span>
+<button class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition shadow-md shadow-indigo-600/30 flex items-center gap-1.5" type="button">
+<svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+              Send to Timeline Studio
+            </button>
+</div>
+</div>
+<!-- Cue Cards List -->
+<div class="space-y-2.5">
+<!-- Segment 01 -->
+<div class="bg-obsidian-container border border-indigo-500/40 rounded-xl p-3.5 hover:border-indigo-400 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 group">
+<div class="flex items-start sm:items-center gap-3">
+<div class="px-2 py-1 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded text-[11px] font-mono font-bold whitespace-nowrap">
+                #01
+              </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-mono text-xs text-indigo-300 font-semibold">00:00.00 → 00:03.12</span>
+<span class="text-[10px] px-1.5 py-0.2 rounded bg-obsidian-elevated text-slate-400 font-mono">Δ 3.12s</span>
+</div>
+<div class="text-white text-sm font-medium mt-0.5">
+                  "It's a random Tuesday"
+                </div>
+</div>
+</div>
+<!-- Segment Metrics & Micro Actions -->
+<div class="flex items-center gap-4 text-xs font-mono self-end sm:self-center">
+<div class="text-right">
+<span class="text-[11px] text-slate-400 block">4 words</span>
+<span class="text-[10px] text-emerald-400 font-semibold uppercase">Pace: Normal</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-7 h-7 rounded-lg bg-obsidian-elevated hover:bg-indigo-600 hover:text-white text-slate-400 flex items-center justify-center transition" title="Play Segment" type="button">
+<svg class="w-3.5 h-3.5" fill="currentColor" viewbox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+</button>
+<button class="w-7 h-7 rounded-lg bg-obsidian-elevated hover:bg-obsidian-highlight text-slate-400 hover:text-white flex items-center justify-center transition" title="Edit Cue" type="button">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+</div>
+</div>
+<!-- Segment 02 -->
+<div class="bg-obsidian-container border border-obsidian-border rounded-xl p-3.5 hover:border-indigo-500/50 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 group">
+<div class="flex items-start sm:items-center gap-3">
+<div class="px-2 py-1 bg-obsidian-elevated text-slate-400 border border-obsidian-border rounded text-[11px] font-mono font-bold whitespace-nowrap">
+                #02
+              </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-mono text-xs text-indigo-300 font-semibold">00:03.12 → 00:07.45</span>
+<span class="text-[10px] px-1.5 py-0.2 rounded bg-obsidian-elevated text-slate-400 font-mono">Δ 4.33s</span>
+</div>
+<div class="text-white text-sm font-medium mt-0.5">
+                  "You've been exhausted all day"
+                </div>
+</div>
+</div>
+<div class="flex items-center gap-4 text-xs font-mono self-end sm:self-center">
+<div class="text-right">
+<span class="text-[11px] text-slate-400 block">5 words</span>
+<span class="text-[10px] text-amber-400 font-semibold uppercase">Pace: Deliberate</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-7 h-7 rounded-lg bg-obsidian-elevated hover:bg-indigo-600 hover:text-white text-slate-400 flex items-center justify-center transition" title="Play Segment" type="button">
+<svg class="w-3.5 h-3.5" fill="currentColor" viewbox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+</button>
+<button class="w-7 h-7 rounded-lg bg-obsidian-elevated hover:bg-obsidian-highlight text-slate-400 hover:text-white flex items-center justify-center transition" title="Edit Cue" type="button">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+</div>
+</div>
+<!-- Segment 03 -->
+<div class="bg-obsidian-container border border-obsidian-border rounded-xl p-3.5 hover:border-indigo-500/50 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 group">
+<div class="flex items-start sm:items-center gap-3">
+<div class="px-2 py-1 bg-obsidian-elevated text-slate-400 border border-obsidian-border rounded text-[11px] font-mono font-bold whitespace-nowrap">
+                #03
+              </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-mono text-xs text-indigo-300 font-semibold">00:07.45 → 00:12.30</span>
+<span class="text-[10px] px-1.5 py-0.2 rounded bg-obsidian-elevated text-slate-400 font-mono">Δ 4.85s</span>
+</div>
+<div class="text-white text-sm font-medium mt-0.5">
+                  "Switching on like a stadium light"
+                </div>
+</div>
+</div>
+<div class="flex items-center gap-4 text-xs font-mono self-end sm:self-center">
+<div class="text-right">
+<span class="text-[11px] text-slate-400 block">6 words</span>
+<span class="text-[10px] text-cyan-400 font-semibold uppercase">Pace: Energetic</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-7 h-7 rounded-lg bg-obsidian-elevated hover:bg-indigo-600 hover:text-white text-slate-400 flex items-center justify-center transition" title="Play Segment" type="button">
+<svg class="w-3.5 h-3.5" fill="currentColor" viewbox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+</button>
+<button class="w-7 h-7 rounded-lg bg-obsidian-elevated hover:bg-obsidian-highlight text-slate-400 hover:text-white flex items-center justify-center transition" title="Edit Cue" type="button">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- END: MainWorkstationGrid -->
+<!-- BEGIN: BottomStatusBar -->
+<footer class="border-t border-obsidian-border bg-obsidian-deepest/90 px-4 lg:px-6 py-2 flex flex-wrap items-center justify-between text-xs text-slate-500 font-mono mt-auto">
+<div class="flex items-center gap-4">
+<span class="flex items-center gap-1.5 text-slate-400">
+<span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+        AI Worker: <strong class="text-white font-medium font-sans">Node-04 (Oregon Cluster)</strong>
+</span>
+<span class="hidden sm:inline text-slate-600">|</span>
+<span class="hidden sm:inline">VRAM: 8.4GB / 24GB</span>
+<span class="hidden sm:inline text-slate-600">|</span>
+<span class="hidden md:inline">Latency: 18ms</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-slate-400">Audio Ingestion Engine: <strong class="text-indigo-400">v3.2.14-PRO</strong></span>
+<span class="text-slate-600">|</span>
+<a class="text-slate-400 hover:text-white transition underline underline-offset-2" href="#">Documentation</a>
+</div>
+</footer>
+<!-- END: BottomStatusBar -->
+</body></html>
