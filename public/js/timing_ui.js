@@ -967,11 +967,14 @@ async function runTranscription() {
   }
 
   const modelKey = splitterState.model || 'fast';
-  const isServerModelReady = Boolean(splitterState.whisperEnv?.ready && splitterState.modelsStatus?.[modelKey]?.downloaded);
+  const isWebDeployment = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+  const isServerReady = Boolean(splitterState.whisperEnv?.ready);
+  const isServerModelReady = Boolean(isServerReady && splitterState.modelsStatus?.[modelKey]?.downloaded);
   const isBrowserCached = modelKey === 'best' ? Boolean(splitterState.bestCached) : Boolean(splitterState.fastCached);
 
-  // 1. Only run in-browser model if local server model is NOT already downloaded/ready (or browser model is already cached)
-  if (splitterState.audioFile && window.isSecureContext && (!isServerModelReady || isBrowserCached)) {
+  // 1. In-browser Whisper transcription (Runs 100% locally in browser via WebGPU / WASM)
+  // Always use browser Whisper on web deployments (Vercel) or when Python server backend is not ready, or when browser model is cached
+  if (splitterState.audioFile && window.isSecureContext && (isWebDeployment || !isServerModelReady || isBrowserCached)) {
     try {
       progText.textContent = 'Preparing SceneFlow AI engine...';
       const clientResult = await transcribeInBrowser(
@@ -1006,8 +1009,20 @@ async function runTranscription() {
         return;
       }
     } catch (clientErr) {
-      console.warn('In-browser transcription fallback to backend:', clientErr);
+      console.warn('In-browser transcription error:', clientErr);
+      if (isWebDeployment || !isServerReady) {
+        progCard.classList.add('hidden');
+        alert(`Transcription error: ${sanitizeProgressText(clientErr.message || 'Browser AI model failed')}. Please retry or paste your script/SRT.`);
+        return;
+      }
     }
+  }
+
+  // If on web deployment or Python backend is not ready, never attempt server Python fallback
+  if (isWebDeployment || !isServerReady) {
+    progCard.classList.add('hidden');
+    alert('Browser AI transcription is not available on this device. Please paste a timestamped script or SRT text directly.');
+    return;
   }
 
   // 2. Fallback: Backend transcription

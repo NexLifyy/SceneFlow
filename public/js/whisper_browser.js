@@ -20,16 +20,26 @@ async function getTransformers() {
     return transformersModule;
   } catch (err) {
     console.error('Failed to load Transformers.js from CDN:', err);
-    throw new Error('Could not load in-browser AI engine. Please check internet connection.');
+    throw new Error('Could not load in-browser AI engine. Please check your internet connection.');
   }
 }
 
 export async function checkDeviceSupport() {
-  const hasWebGPU = typeof navigator !== 'undefined' && !!navigator.gpu;
+  let hasWebGPU = false;
+  let hasFp16 = false;
+  if (typeof navigator !== 'undefined' && navigator.gpu) {
+    try {
+      const adapter = await navigator.gpu.requestAdapter();
+      if (adapter) {
+        hasWebGPU = true;
+        hasFp16 = Boolean(adapter.features && adapter.features.has('shader-f16'));
+      }
+    } catch {}
+  }
   return {
     webgpu: hasWebGPU,
     recommendedDevice: hasWebGPU ? 'webgpu' : 'wasm',
-    dtype: hasWebGPU ? 'fp16' : 'q8'
+    dtype: hasWebGPU ? (hasFp16 ? 'fp16' : 'q4') : 'q8'
   };
 }
 
@@ -100,51 +110,78 @@ export async function loadWhisperModel(modelKey = 'fast', onProgress = null) {
   const { recommendedDevice, dtype } = await checkDeviceSupport();
 
   const fileProgressMap = new Map();
-
-  const transcriber = await pipeline('automatic-speech-recognition', modelId, {
-    device: recommendedDevice,
-    dtype: dtype,
-    progress_callback: (p) => {
-      if (!p) return;
-      if (p.file) {
-        const prev = fileProgressMap.get(p.file) || { loaded: 0, total: 0, progress: 0 };
-        fileProgressMap.set(p.file, {
-          loaded: typeof p.loaded === 'number' ? p.loaded : prev.loaded,
-          total: typeof p.total === 'number' ? Math.max(p.total, prev.total) : prev.total,
-          progress: typeof p.progress === 'number' ? p.progress : prev.progress
-        });
-      }
-
-      if (onProgress) {
-        let totalLoaded = 0;
-        let totalExpected = 0;
-        for (const item of fileProgressMap.values()) {
-          totalLoaded += item.loaded;
-          totalExpected += Math.max(item.total, item.loaded);
-        }
-
-        const formatted = formatModelLoadProgress({
-          modelKey,
-          status: p.status,
-          isCached,
-          loadedBytes: totalLoaded,
-          totalBytes: totalExpected,
-          progressPercent: p.progress || 0
-        });
-
-        onProgress({
-          status: p.status,
-          isCached,
-          isDownloading: formatted.isDownloading,
-          file: p.file || '',
-          percent: formatted.percent,
-          mbDownloaded: formatted.mbDownloaded,
-          mbTotal: formatted.mbTotal,
-          text: formatted.text
-        });
-      }
+  const progressCallback = (p) => {
+    if (!p) return;
+    if (p.file) {
+      const prev = fileProgressMap.get(p.file) || { loaded: 0, total: 0, progress: 0 };
+      fileProgressMap.set(p.file, {
+        loaded: typeof p.loaded === 'number' ? p.loaded : prev.loaded,
+        total: typeof p.total === 'number' ? Math.max(p.total, prev.total) : prev.total,
+        progress: typeof p.progress === 'number' ? p.progress : prev.progress
+      });
     }
-  });
+
+    if (onProgress) {
+      let totalLoaded = 0;
+      let totalExpected = 0;
+      for (const item of fileProgressMap.values()) {
+        totalLoaded += item.loaded;
+        totalExpected += Math.max(item.total, item.loaded);
+      }
+
+      const formatted = formatModelLoadProgress({
+        modelKey,
+        status: p.status,
+        isCached,
+        loadedBytes: totalLoaded,
+        totalBytes: totalExpected,
+        progressPercent: p.progress || 0
+      });
+
+      onProgress({
+        status: p.status,
+        isCached,
+        isDownloading: formatted.isDownloading,
+        file: p.file || '',
+        percent: formatted.percent,
+        mbDownloaded: formatted.mbDownloaded,
+        mbTotal: formatted.mbTotal,
+        text: formatted.text
+      });
+    }
+  };
+
+  let transcriber;
+  if (recommendedDevice === 'webgpu') {
+    try {
+      transcriber = await pipeline('automatic-speech-recognition', modelId, {
+        device: 'webgpu',
+        dtype: dtype,
+        progress_callback: progressCallback
+      });
+    } catch (gpuErr) {
+      console.warn('WebGPU pipeline failed, falling back to WASM engine:', gpuErr);
+      if (onProgress) {
+        onProgress({
+          status: 'fallback',
+          isDownloading: false,
+          percent: 25,
+          text: 'Falling back to standard CPU engine...'
+        });
+      }
+      transcriber = await pipeline('automatic-speech-recognition', modelId, {
+        device: 'wasm',
+        dtype: 'q8',
+        progress_callback: progressCallback
+      });
+    }
+  } else {
+    transcriber = await pipeline('automatic-speech-recognition', modelId, {
+      device: 'wasm',
+      dtype: 'q8',
+      progress_callback: progressCallback
+    });
+  }
 
   activePipeline = transcriber;
   activeModelKey = modelKey;
@@ -154,24 +191,39 @@ export async function loadWhisperModel(modelKey = 'fast', onProgress = null) {
 export async function decodeAudioToMono(fileOrBlob) {
   const arrayBuffer = await fileOrBlob.arrayBuffer();
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-  const audioCtx = new AudioContextClass({ sampleRate: 16000 });
-  const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+  let audioCtx;
+  let audioBuffer;
 
-  const numChannels = audioBuffer.numberOfChannels;
-  const length = audioBuffer.length;
-  const mono = new Float32Array(length);
+  // Try creating with 16000Hz first, or fallback to default audioCtx
+  try {
+    audioCtx = new AudioContextClass({ sampleRate: 16000 });
+    audioBuffer = await audioCtx.decodeAudioData(arrayBuffer.slice(0));
+  } catch (err) {
+    if (audioCtx) { try { await audioCtx.close(); } catch {} }
+    audioCtx = new AudioContextClass();
+    audioBuffer = await audioCtx.decodeAudioData(arrayBuffer.slice(0));
+  }
 
-  if (numChannels === 1) {
-    mono.set(audioBuffer.getChannelData(0));
-  } else {
-    const ch0 = audioBuffer.getChannelData(0);
-    const ch1 = audioBuffer.getChannelData(1);
-    for (let i = 0; i < length; i++) {
-      mono[i] = (ch0[i] + ch1[i]) / 2;
+  // Ensure resampled to 16000Hz mono Float32Array
+  if (audioBuffer.sampleRate !== 16000 || audioBuffer.numberOfChannels > 1) {
+    const OfflineCtxClass = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    if (OfflineCtxClass) {
+      const offlineCtx = new OfflineCtxClass(
+        1,
+        Math.ceil(audioBuffer.duration * 16000),
+        16000
+      );
+      const bufferSource = offlineCtx.createBufferSource();
+      bufferSource.buffer = audioBuffer;
+      bufferSource.connect(offlineCtx.destination);
+      bufferSource.start(0);
+      audioBuffer = await offlineCtx.startRendering();
     }
   }
 
-  await audioCtx.close();
+  const mono = audioBuffer.getChannelData(0);
+  if (audioCtx) { try { await audioCtx.close(); } catch {} }
+
   return {
     audioData: mono,
     duration: audioBuffer.duration
@@ -245,13 +297,56 @@ export async function transcribeInBrowser(audioFile, options = {}, onProgress = 
     });
   }
 
-  const result = await transcriber(audioData, {
-    return_timestamps: 'word',
-    chunk_length_s: 30,
-    stride_length_s: 5,
-    language: language,
-    task: 'transcribe'
-  });
+  let result;
+  try {
+    result = await transcriber(audioData, {
+      return_timestamps: 'word',
+      chunk_length_s: 30,
+      stride_length_s: 5,
+      language: language,
+      task: 'transcribe'
+    });
+  } catch (inferErr) {
+    console.warn('Primary transcription failed, retrying on standard WASM engine:', inferErr);
+    if (onProgress) {
+      onProgress({
+        type: 'progress',
+        status: 'transcribing_fallback',
+        percent: 35,
+        processedSec: 0,
+        totalSec: Math.round(duration),
+        text: 'Retrying on standard CPU engine...'
+      });
+    }
+
+    try {
+      const { pipeline } = await getTransformers();
+      const modelId = modelKey === 'best' ? 'onnx-community/whisper-small' : 'onnx-community/whisper-base';
+      const wasmTranscriber = await pipeline('automatic-speech-recognition', modelId, {
+        device: 'wasm',
+        dtype: 'q8'
+      });
+      activePipeline = wasmTranscriber;
+      result = await wasmTranscriber(audioData, {
+        return_timestamps: 'word',
+        chunk_length_s: 30,
+        stride_length_s: 5,
+        language: language,
+        task: 'transcribe'
+      });
+    } catch (retryErr) {
+      // If word-level timestamps failed, retry once with basic timestamps
+      console.warn('Word-timestamp inference failed, falling back to segment timestamps:', retryErr);
+      const fallbackTranscriber = activePipeline || transcriber;
+      result = await fallbackTranscriber(audioData, {
+        return_timestamps: true,
+        chunk_length_s: 30,
+        stride_length_s: 5,
+        language: language,
+        task: 'transcribe'
+      });
+    }
+  }
 
   if (onProgress) {
     onProgress({
