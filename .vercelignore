@@ -1,0 +1,7 @@
+# Ignore Python desktop scripts so Vercel treats this purely as an Express/Node app
+python/
+stitch_redesign/
+setup-whisper.bat
+start.bat
+test/
+bin/folderpicker.*
