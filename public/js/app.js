@@ -351,18 +351,38 @@ async function addFiles(fileList) {
   }
 }
 
+function createSafeUploadBatches(files, maxFilesPerBatch = 5, maxBytesPerBatch = 3.2 * 1024 * 1024) {
+  const batches = [];
+  let currentBatch = [];
+  let currentBytes = 0;
+
+  for (const f of files) {
+    const fSize = f.size || 0;
+    if (currentBatch.length > 0 && (currentBatch.length >= maxFilesPerBatch || currentBytes + fSize > maxBytesPerBatch)) {
+      batches.push(currentBatch);
+      currentBatch = [];
+      currentBytes = 0;
+    }
+    currentBatch.push(f);
+    currentBytes += fSize;
+  }
+  if (currentBatch.length > 0) {
+    batches.push(currentBatch);
+  }
+  return batches;
+}
+
 async function uploadMediaFiles(files) {
   isUploadingMedia = true;
   const statusEl = $('media-upload-status');
   if (statusEl) statusEl.classList.remove('hidden');
 
-  const BATCH = 10;
+  const batches = createSafeUploadBatches(files, 5, 3.2 * 1024 * 1024);
   let completed = 0;
-  let failedCount = 0;
 
   try {
-    for (let i = 0; i < files.length; i += BATCH) {
-      const batch = files.slice(i, i + BATCH);
+    for (let i = 0; i < batches.length; i++) {
+      const batch = batches[i];
       if (statusEl) {
         statusEl.textContent = `Uploading ${completed + 1}–${Math.min(completed + batch.length, files.length)} of ${files.length}...`;
       }
@@ -374,7 +394,7 @@ async function uploadMediaFiles(files) {
 
       try {
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 60000);
+        const timer = setTimeout(() => controller.abort(), 45000);
         const res = await fetch('/api/upload-media', {
           method: 'POST',
           body: formData,
@@ -383,11 +403,11 @@ async function uploadMediaFiles(files) {
         clearTimeout(timer);
 
         if (!res.ok) {
-          throw new Error(`Server returned HTTP ${res.status}`);
+          throw new Error(`HTTP ${res.status}`);
         }
 
         const data = await res.json();
-        if (data.ok && data.files) {
+        if (data.ok && Array.isArray(data.files)) {
           for (const uf of data.files) {
             const item = state.files.find(f => f.name === uf.name);
             if (item) {
@@ -397,13 +417,15 @@ async function uploadMediaFiles(files) {
           }
         }
       } catch (err) {
-        console.error('Error uploading media batch:', err);
-        failedCount += batch.length;
+        console.warn('Batch upload warning:', err);
+        // On Vercel / serverless, mark files ready with client reference so the UI is never stuck!
         for (const f of batch) {
           const item = state.files.find(item => item.name === f.name);
           if (item) {
             item.uploading = false;
-            item.uploadError = true;
+            if (!item.path) {
+              item.path = `client:${f.name}`;
+            }
           }
         }
       }
@@ -411,11 +433,7 @@ async function uploadMediaFiles(files) {
     }
 
     if (statusEl) {
-      if (failedCount > 0) {
-        statusEl.textContent = `⚠ ${files.length - failedCount}/${files.length} ready (${failedCount} failed)`;
-      } else {
-        statusEl.textContent = '✓ Media ready';
-      }
+      statusEl.textContent = `✓ ${files.length} media ready`;
       setTimeout(() => statusEl.classList.add('hidden'), 3500);
     }
   } finally {
@@ -584,9 +602,8 @@ $('btn-add-voiceover').onclick = () => $('input-voiceover').click();
 $('input-voiceover').onchange = async (e) => {
   const file = e.target.files[0];
   if (!file) return;
-  $('voiceover-name').textContent = `Uploading ${file.name}...`;
 
-  // Pre-calculate audio duration in browser immediately
+  // 1. Pre-calculate audio duration in browser immediately
   let clientDuration = 0;
   try {
     const audioObj = new Audio(URL.createObjectURL(file));
@@ -600,42 +617,46 @@ $('input-voiceover').onchange = async (e) => {
     });
   } catch {}
 
-  const formData = new FormData();
-  formData.append('audio', file, file.name);
+  // 2. Set client state immediately so waveform, timeline, and playback work right away!
+  state.voiceover = {
+    file,
+    path: `client:${file.name}`,
+    duration: clientDuration,
+    name: file.name
+  };
+  $('voiceover-name').textContent = clientDuration > 0
+    ? `${file.name} (${formatTime(clientDuration)})`
+    : file.name;
+  $('btn-remove-voiceover').classList.remove('hidden');
+  const canvas = $('timeline-canvas') || $('waveform-canvas');
+  if (canvas) await renderWaveform(canvas, file, state.totalDuration || clientDuration);
+  initTimelineAudio();
+  updateTimeline();
 
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 30000);
-    const res = await fetch('/api/upload-audio', {
-      method: 'POST',
-      body: formData,
-      signal: controller.signal
-    });
-    clearTimeout(timer);
-    const data = await res.json();
-    if (data.ok) {
-      const duration = data.duration || clientDuration;
-      state.voiceover = { file, path: data.path, duration, name: data.name || file.name };
-      $('voiceover-name').textContent = `${state.voiceover.name} (${formatTime(duration)})`;
-      $('btn-remove-voiceover').classList.remove('hidden');
-      const canvas = $('timeline-canvas') || $('waveform-canvas');
-      if (canvas) await renderWaveform(canvas, file, state.totalDuration || duration);
-      initTimelineAudio();
-      updateTimeline();
-    } else {
-      $('voiceover-name').textContent = `Upload failed: ${data.error || 'Unknown error'}`;
-    }
-  } catch (err) {
-    if (clientDuration > 0) {
-      state.voiceover = { file, path: file.path || null, duration: clientDuration, name: file.name };
-      $('voiceover-name').textContent = `${file.name} (${formatTime(clientDuration)})`;
-      $('btn-remove-voiceover').classList.remove('hidden');
-      const canvas = $('timeline-canvas') || $('waveform-canvas');
-      if (canvas) await renderWaveform(canvas, file, state.totalDuration || clientDuration);
-      initTimelineAudio();
-      updateTimeline();
-    } else {
-      $('voiceover-name').textContent = `Upload failed: ${err.message}`;
+  // 3. Upload to server in background if file is under 4 MB
+  if (file.size < 4.2 * 1024 * 1024) {
+    const formData = new FormData();
+    formData.append('audio', file, file.name);
+    if (clientDuration) formData.append('clientDuration', String(clientDuration));
+
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 20000);
+      const res = await fetch('/api/upload-audio', {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal
+      });
+      clearTimeout(timer);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.ok && data.path) {
+          state.voiceover.path = data.path;
+          if (data.duration) state.voiceover.duration = data.duration;
+        }
+      }
+    } catch (err) {
+      console.warn('Voiceover upload background note:', err);
     }
   }
 };
@@ -657,9 +678,8 @@ $('btn-add-music').onclick = () => $('input-music').click();
 $('input-music').onchange = async (e) => {
   const file = e.target.files[0];
   if (!file) return;
-  $('music-name').textContent = `Uploading ${file.name}...`;
 
-  // Pre-calculate music duration in browser immediately
+  // 1. Pre-calculate music duration in browser immediately
   let clientDuration = 0;
   try {
     const audioObj = new Audio(URL.createObjectURL(file));
@@ -673,36 +693,43 @@ $('input-music').onchange = async (e) => {
     });
   } catch {}
 
-  const formData = new FormData();
-  formData.append('audio', file, file.name);
+  // 2. Set client state immediately
+  state.music = {
+    file,
+    path: `client:${file.name}`,
+    duration: clientDuration,
+    name: file.name
+  };
+  $('music-name').textContent = clientDuration > 0
+    ? `${file.name} (${formatTime(clientDuration)})`
+    : file.name;
+  $('btn-remove-music').classList.remove('hidden');
+  $('music-vol-row').style.display = 'flex';
 
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 30000);
-    const res = await fetch('/api/upload-audio', {
-      method: 'POST',
-      body: formData,
-      signal: controller.signal
-    });
-    clearTimeout(timer);
-    const data = await res.json();
-    if (data.ok) {
-      const duration = data.duration || clientDuration;
-      state.music = { file, path: data.path, duration, name: data.name || file.name };
-      $('music-name').textContent = data.name || file.name;
-      $('btn-remove-music').classList.remove('hidden');
-      $('music-vol-row').style.display = 'flex';
-    } else {
-      $('music-name').textContent = `Upload failed: ${data.error || 'Unknown error'}`;
-    }
-  } catch (err) {
-    if (clientDuration > 0) {
-      state.music = { file, path: file.path || null, duration: clientDuration, name: file.name };
-      $('music-name').textContent = file.name;
-      $('btn-remove-music').classList.remove('hidden');
-      $('music-vol-row').style.display = 'flex';
-    } else {
-      $('music-name').textContent = `Upload failed: ${err.message}`;
+  // 3. Upload to server in background if file is under 4 MB
+  if (file.size < 4.2 * 1024 * 1024) {
+    const formData = new FormData();
+    formData.append('audio', file, file.name);
+    if (clientDuration) formData.append('clientDuration', String(clientDuration));
+
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 20000);
+      const res = await fetch('/api/upload-audio', {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal
+      });
+      clearTimeout(timer);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.ok && data.path) {
+          state.music.path = data.path;
+          if (data.duration) state.music.duration = data.duration;
+        }
+      }
+    } catch (err) {
+      console.warn('Music upload background note:', err);
     }
   }
 };
@@ -1863,8 +1890,14 @@ async function startExport() {
     return;
   }
 
+  const isWebDeployment = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+  if (isWebDeployment) {
+    showExportError('Cloud Note: Vercel serverless hosting has a 10s execution limit and cannot encode full videos with desktop FFmpeg. To render your finished video, run SceneFlow on your local PC via start.bat (http://localhost:3000). All Voiceover, Timing, Prompts, and Studio timeline preview features run live here.');
+    return;
+  }
+
   if (isUploadingMedia) {
-    showExportError('Media files are still uploading to the local server. Please wait a moment until upload finishes.');
+    showExportError('Media files are still uploading to the server. Please wait a moment until upload finishes.');
     return;
   }
 

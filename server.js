@@ -216,7 +216,13 @@ app.post('/api/upload-audio', (req, res, next) => {
     if (!req.file) return res.status(400).json({ error: 'No audio file uploaded' });
     const name = fixFilenameEncoding(req.file.originalname);
     const filePath = req.file.path;
-    const duration = await getAudioDuration(filePath);
+    let duration = 0;
+    if (req.body && req.body.clientDuration) {
+      duration = parseFloat(req.body.clientDuration) || 0;
+    }
+    if (!duration) {
+      duration = await getAudioDuration(filePath);
+    }
     res.json({
       ok: true,
       name,
