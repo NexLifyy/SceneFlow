@@ -10,6 +10,7 @@ import { initVoiceoverUI } from './voice_ui.js';
 import { initPromptsUI } from './prompts_ui.js';
 import { initImagesUI } from './images_ui.js';
 import { getBlockFilename } from './timing_client.js';
+import { compileVideoInBrowser, triggerFileDownload } from './browser_renderer.js';
 
 // ── State ────────────────────────────────────────────────────────────────
 const state = {
@@ -1903,6 +1904,116 @@ if ($('btn-new-export')) {
   };
 }
 
+let activeRenderObjectUrl = null;
+let browserExportAbortController = null;
+
+function resetRenderPlayer() {
+  const player = $('render-video-player');
+  if (player) {
+    try { player.pause(); } catch {}
+    player.removeAttribute('src');
+    player.load();
+  }
+  if (activeRenderObjectUrl) {
+    try { URL.revokeObjectURL(activeRenderObjectUrl); } catch {}
+    activeRenderObjectUrl = null;
+  }
+  if ($('render-player-wrap')) $('render-player-wrap').classList.add('hidden');
+  if ($('render-modal-card')) {
+    $('render-modal-card').classList.remove('max-w-2xl');
+    $('render-modal-card').classList.add('max-w-md');
+  }
+}
+
+async function startBrowserExport() {
+  if (!state.clips.length) {
+    showExportError('No clips in timeline. Add images or videos first.');
+    return;
+  }
+
+  const fileNameInput = $('out-filename') || $('export-filename');
+  const fileName = ((fileNameInput ? fileNameInput.value.trim() : '') || 'export') + '.mp4';
+  const resolution = $('s-resolution') ? $('s-resolution').value : '720p';
+
+  resetRenderPlayer();
+
+  if ($('export-error')) $('export-error').classList.add('hidden');
+  if ($('export-done')) $('export-done').classList.add('hidden');
+  if ($('export-progress')) $('export-progress').classList.remove('hidden');
+  if ($('render-modal')) $('render-modal').classList.remove('hidden');
+  if ($('btn-create-video')) $('btn-create-video').classList.add('hidden');
+  if ($('btn-render')) $('btn-render').classList.add('hidden');
+  if ($('btn-cancel-export')) $('btn-cancel-export').classList.remove('hidden');
+  if ($('btn-cancel-render')) $('btn-cancel-render').classList.remove('hidden');
+  if ($('render-complete-actions')) $('render-complete-actions').classList.add('hidden');
+  if ($('btn-close-modal')) $('btn-close-modal').classList.add('hidden');
+  if ($('render-modal-dot')) {
+    $('render-modal-dot').className = 'w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse';
+  }
+
+  const hwEl = $('render-modal')?.querySelector('.text-\\[11px\\].font-mono.text-slate-500 span:first-child');
+  if (hwEl) hwEl.textContent = 'Hardware: Browser WebCodecs';
+
+  if ($('progress-bar')) $('progress-bar').style.width = '0%';
+  if ($('progress-pct')) $('progress-pct').textContent = '0%';
+  if ($('progress-stage')) $('progress-stage').textContent = 'Preparing browser engine…';
+  if ($('render-progress-bar')) $('render-progress-bar').style.width = '0%';
+  if ($('render-progress-val')) $('render-progress-val').textContent = '0%';
+  if ($('render-status-text')) $('render-status-text').textContent = 'Initializing in-browser video compiler…';
+  if ($('render-eta-text')) $('render-eta-text').textContent = 'ETA: calculating…';
+
+  state.exportStartTime = Date.now();
+  browserExportAbortController = new AbortController();
+
+  try {
+    const result = await compileVideoInBrowser({
+      clips: state.clips,
+      files: state.files,
+      voiceover: state.voiceover,
+      music: state.music,
+      musicVolume: $('music-volume') ? parseFloat($('music-volume').value) : 0.15,
+      captionLines: state.captionLines,
+      captionStyle: state.captionStyle,
+      captionFont: state.captionFont,
+      captionColor: state.captionColor,
+      captionHighlight: state.captionHighlight,
+      captionSize: state.captionSize,
+      captionPosition: state.captionPosition,
+      resolution,
+      fps: 30,
+      fileName,
+      onProgress: ({ pct, stage, etaSec }) => {
+        if ($('progress-bar')) $('progress-bar').style.width = `${pct}%`;
+        if ($('progress-pct')) $('progress-pct').textContent = `${pct}%`;
+        if ($('progress-stage')) $('progress-stage').textContent = stage;
+        if ($('render-progress-bar')) $('render-progress-bar').style.width = `${pct}%`;
+        if ($('render-progress-val')) $('render-progress-val').textContent = `${pct}%`;
+        if ($('render-status-text')) $('render-status-text').textContent = stage;
+        if (etaSec > 0) {
+          const etaStr = `ETA: ${formatTime(etaSec)}`;
+          if ($('progress-eta')) $('progress-eta').textContent = etaStr;
+          if ($('render-eta-text')) $('render-eta-text').textContent = etaStr;
+        }
+      },
+      signal: browserExportAbortController.signal,
+    });
+
+    // Automatically trigger browser download of the finished video file
+    triggerFileDownload(result.blob, result.fileName);
+
+    showExportDone(result, () => resetRenderPlayer(), (url) => { activeRenderObjectUrl = url; });
+
+  } catch (err) {
+    if (err && err.message === 'Render cancelled by user') {
+      $('render-modal').classList.add('hidden');
+      return;
+    }
+    showExportError(`Browser render error: ${err.message}`);
+  } finally {
+    browserExportAbortController = null;
+  }
+}
+
 async function startExport() {
   if (!state.clips.length) {
     showExportError('No clips in timeline. Add images or videos first.');
@@ -1911,8 +2022,7 @@ async function startExport() {
 
   const isWebDeployment = typeof window !== 'undefined' && window.location.hostname.includes('vercel.app');
   if (isWebDeployment) {
-    showExportError('Cloud Note: Vercel serverless hosting has a 10s execution limit and cannot encode full videos with desktop FFmpeg. To render your finished video, run SceneFlow on your local PC via start.bat (http://localhost:3000). All Voiceover, Timing, Prompts, and Studio timeline preview features run live here.');
-    return;
+    return startBrowserExport();
   }
 
   if (isUploadingMedia) {
@@ -1955,24 +2065,6 @@ async function startExport() {
     await checkDiskSpace(saveFolder);
   }
 
-  let activeRenderObjectUrl = null;
-  function resetRenderPlayer() {
-    const player = $('render-video-player');
-    if (player) {
-      try { player.pause(); } catch {}
-      player.removeAttribute('src');
-      player.load();
-    }
-    if (activeRenderObjectUrl) {
-      try { URL.revokeObjectURL(activeRenderObjectUrl); } catch {}
-      activeRenderObjectUrl = null;
-    }
-    if ($('render-player-wrap')) $('render-player-wrap').classList.add('hidden');
-    if ($('render-modal-card')) {
-      $('render-modal-card').classList.remove('max-w-2xl');
-      $('render-modal-card').classList.add('max-w-md');
-    }
-  }
   resetRenderPlayer();
 
   if ($('export-error')) $('export-error').classList.add('hidden');
@@ -2081,9 +2173,14 @@ async function startExport() {
 }
 
 async function cancelExport() {
-  if (!state.activeJobId) return;
-  await api('POST', `/api/export/${state.activeJobId}/cancel`, {});
-  state.activeJobId = null;
+  if (browserExportAbortController) {
+    browserExportAbortController.abort();
+    browserExportAbortController = null;
+  }
+  if (state.activeJobId) {
+    await api('POST', `/api/export/${state.activeJobId}/cancel`, {}).catch(() => {});
+    state.activeJobId = null;
+  }
   if ($('export-progress')) $('export-progress').classList.add('hidden');
   if ($('render-modal')) $('render-modal').classList.add('hidden');
   if ($('btn-create-video')) $('btn-create-video').classList.remove('hidden');
@@ -2124,7 +2221,7 @@ function showExportDone(data, resetPlayerCb, trackUrlCb) {
   if ($('render-status-text')) {
     $('render-status-text').textContent = data.savedBrowserFolder
       ? `Saved to "${data.savedBrowserFolder}/${data.savedFileName || ''}"!`
-      : 'Render completed successfully!';
+      : (data.blob ? '✓ Video compiled & downloaded!' : 'Render completed successfully!');
   }
   if ($('render-eta-text')) $('render-eta-text').textContent = `Done in ${elapsed}s (${mb} MB)`;
   if ($('render-complete-actions')) $('render-complete-actions').classList.remove('hidden');
@@ -2136,6 +2233,22 @@ function showExportDone(data, resetPlayerCb, trackUrlCb) {
     };
   }
 
+  // If in-browser video URL is provided, display player immediately
+  if (data.url) {
+    const player = $('render-video-player');
+    const wrap = $('render-player-wrap');
+    const card = $('render-modal-card');
+    if (player && wrap) {
+      if (card) {
+        card.classList.remove('max-w-md');
+        card.classList.add('max-w-2xl');
+      }
+      wrap.classList.remove('hidden');
+      player.src = data.url;
+      player.play().catch(() => {});
+    }
+  }
+
   const outDirInput = $('out-dir') || $('export-folder');
   if ($('btn-open-export')) {
     $('btn-open-export').onclick = async () => {
@@ -2145,7 +2258,9 @@ function showExportDone(data, resetPlayerCb, trackUrlCb) {
       if (!player || !wrap) return;
       try {
         let srcUrl = '';
-        if (data.savedFileHandle && typeof data.savedFileHandle.getFile === 'function') {
+        if (data.url) {
+          srcUrl = data.url;
+        } else if (data.savedFileHandle && typeof data.savedFileHandle.getFile === 'function') {
           const file = await data.savedFileHandle.getFile();
           srcUrl = URL.createObjectURL(file);
           if (trackUrlCb) trackUrlCb(srcUrl);
@@ -2166,21 +2281,29 @@ function showExportDone(data, resetPlayerCb, trackUrlCb) {
     };
   }
   if ($('btn-open-folder')) {
-    $('btn-open-folder').onclick = async () => {
-      const p = data.outputPath || (outDirInput ? outDirInput.value : '');
-      if (p) {
-        try {
-          await api('POST', '/api/open-folder', { folderPath: p });
-        } catch (err) {
-          console.warn('Could not open folder via API:', err);
+    if (data.blob) {
+      $('btn-open-folder').textContent = 'Download Video';
+      $('btn-open-folder').onclick = () => {
+        triggerFileDownload(data.blob, data.fileName || 'export.mp4');
+      };
+    } else {
+      $('btn-open-folder').textContent = 'Open Folder';
+      $('btn-open-folder').onclick = async () => {
+        const p = data.outputPath || (outDirInput ? outDirInput.value : '');
+        if (p) {
+          try {
+            await api('POST', '/api/open-folder', { folderPath: p });
+          } catch (err) {
+            console.warn('Could not open folder via API:', err);
+          }
         }
-      }
-    };
+      };
+    }
   }
 
-  // Automatically open video location in Windows Explorer
+  // Automatically open video location in Windows Explorer (local machine only)
   const targetPath = data.outputPath || (outDirInput ? outDirInput.value : '');
-  if (!data.savedBrowserFolder && targetPath) {
+  if (!data.savedBrowserFolder && !data.blob && targetPath) {
     api('POST', '/api/open-folder', { folderPath: targetPath }).catch(() => {});
   }
 
