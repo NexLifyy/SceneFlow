@@ -31,10 +31,22 @@ export async function isWebCodecsSupported(width = 1280, height = 720) {
       height,
       bitrate: 4_000_000,
       framerate: 30,
+      avc: { format: 'avc' },
     });
     return Boolean(videoSupport && videoSupport.supported);
   } catch (err) {
-    return false;
+    try {
+      const basicSupport = await VideoEncoder.isConfigSupported({
+        codec: 'avc1.4d002a',
+        width,
+        height,
+        bitrate: 4_000_000,
+        framerate: 30,
+      });
+      return Boolean(basicSupport && basicSupport.supported);
+    } catch {
+      return false;
+    }
   }
 }
 
@@ -371,21 +383,35 @@ export async function compileVideoInBrowser({
   });
 
   let videoError = null;
+  let cachedVideoMeta = null;
   const videoEncoder = new VideoEncoder({
-    output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+    output: (chunk, meta) => {
+      if (meta && meta.decoderConfig) {
+        cachedVideoMeta = meta;
+      }
+      muxer.addVideoChunk(chunk, meta || cachedVideoMeta);
+    },
     error: (e) => {
       console.error('VideoEncoder error:', e);
       videoError = e;
     },
   });
 
-  videoEncoder.configure({
+  const videoConfig = {
     codec: 'avc1.4d002a',
     width,
     height,
     bitrate: resolution === '1080p' ? 8_000_000 : 4_000_000,
     framerate: fps,
-  });
+    avc: { format: 'avc' },
+  };
+
+  try {
+    videoEncoder.configure(videoConfig);
+  } catch (err) {
+    delete videoConfig.avc;
+    videoEncoder.configure(videoConfig);
+  }
 
   // AudioEncoder (if supported)
   let audioEncoder = null;

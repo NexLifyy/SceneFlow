@@ -9,6 +9,11 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
+test('mp4-muxer.js safely guards colorSpace access when decoderConfig is null', () => {
+  const muxerCode = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'mp4-muxer.js'), 'utf8');
+  assert.ok(muxerCode.includes('track.info.decoderConfig?.colorSpace'), 'mp4-muxer should use optional chaining for decoderConfig.colorSpace');
+});
+
 test('mp4-muxer.js exists and exports Muxer and ArrayBufferTarget', async () => {
   const muxerPath = path.join(__dirname, '..', 'public', 'js', 'mp4-muxer.js');
   assert.ok(fs.existsSync(muxerPath), 'mp4-muxer.js should exist in public/js');

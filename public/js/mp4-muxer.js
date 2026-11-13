@@ -388,7 +388,7 @@ var videoSampleDescription = (compressionType, track) => box(compressionType, [
   // Pre-defined
 ], [
   VIDEO_CODEC_TO_CONFIGURATION_BOX[track.info.codec](track),
-  track.info.decoderConfig.colorSpace ? colr(track) : null
+  track.info.decoderConfig?.colorSpace ? colr(track) : null
 ]);
 var COLOR_PRIMARIES_MAP = {
   "bt709": 1,
@@ -416,18 +416,18 @@ var MATRIX_COEFFICIENTS_MAP = {
   "smpte170m": 6
   // SMPTE 170M
 };
-var colr = (track) => box("colr", [
+var colr = (track) => track.info.decoderConfig?.colorSpace ? box("colr", [
   ascii("nclx"),
   // Colour type
-  u16(COLOR_PRIMARIES_MAP[track.info.decoderConfig.colorSpace.primaries]),
+  u16(COLOR_PRIMARIES_MAP[track.info.decoderConfig.colorSpace.primaries] || 1),
   // Colour primaries
-  u16(TRANSFER_CHARACTERISTICS_MAP[track.info.decoderConfig.colorSpace.transfer]),
+  u16(TRANSFER_CHARACTERISTICS_MAP[track.info.decoderConfig.colorSpace.transfer] || 1),
   // Transfer characteristics
-  u16(MATRIX_COEFFICIENTS_MAP[track.info.decoderConfig.colorSpace.matrix]),
+  u16(MATRIX_COEFFICIENTS_MAP[track.info.decoderConfig.colorSpace.matrix] || 1),
   // Matrix coefficients
   u8((track.info.decoderConfig.colorSpace.fullRange ? 1 : 0) << 7)
   // Full range flag
-]);
+]) : null;
 var avcC = (track) => track.info.decoderConfig && box("avcC", [
   // For AVC, description is an AVCDecoderConfigurationRecord, so nothing else to do here
   ...new Uint8Array(track.info.decoderConfig.description)
