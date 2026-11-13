@@ -1345,12 +1345,6 @@
           </svg>
           <span>Add Folder</span>
         </button>
-        <button id="btn-add-zip" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-slate-300 border border-obsidian-700 text-xs font-medium transition cursor-pointer">
-          <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-          </svg>
-          <span>Add Zip</span>
-        </button>
         <button id="btn-add-files" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-slate-300 border border-obsidian-700 text-xs font-medium transition">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
@@ -1366,8 +1360,7 @@
 
         <span id="media-upload-status" class="media-upload-status hidden font-mono text-xs text-teal-400"></span>
         <input type="file" id="input-folder" webkitdirectory multiple accept="image/*,video/*" style="display:none">
-        <input type="file" id="input-files" multiple accept="image/*,video/*,.zip" style="display:none">
-        <input type="file" id="input-zip" accept=".zip,application/zip,application/x-zip-compressed" style="display:none">
+        <input type="file" id="input-files" multiple accept="image/*,video/*" style="display:none">
       </div>
     </div>
 
@@ -1808,7 +1801,6 @@
       <!-- Waveform Audio Track Container -->
       <div id="timeline-tracks" class="timeline-tracks relative h-24 rounded-lg bg-obsidian-900 border border-obsidian-750/70 overflow-hidden cursor-pointer select-none">
         <canvas id="timeline-canvas" class="w-full h-full block"></canvas>
-        <div id="timeline-playhead" class="timeline-playhead absolute top-0 bottom-0 w-0.5 bg-rose-500 shadow-[0_0_8px_#f43f5e] z-20 pointer-events-none transition-none" style="left: 0%;"></div>
         <div id="timeline-cursor" class="timeline-cursor absolute top-0 bottom-0 w-px bg-white/40 pointer-events-none hidden"></div>
       </div>
 
@@ -2056,6 +2048,6 @@
 <div id="history-backdrop" class="backdrop hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-40"></div>
 
 <!-- GLOBAL APP CONTROLLER -->
-<script src="/js/app.js?v=36.0" type="module"></script>
+<script src="/js/app.js?v=37.0" type="module"></script>
 </body>
 </html>

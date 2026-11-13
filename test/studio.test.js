@@ -157,7 +157,7 @@ test('Studio Section 01 HTML & CSS reflect Add Zip, Reset, 8-image fixed-height 
     assert.equal(sec1.includes(removed), false, `Removed text still present in Studio Section 01: ${removed}`);
   }
 
-  assert.ok(sec1.includes('id="btn-add-zip"') && sec1.includes('>Add Zip</span>'), 'Expected Add Zip button');
+  assert.equal(sec1.includes('id="btn-add-zip"'), false, 'Add Zip button should be removed');
   assert.ok(sec1.includes('id="btn-clear"') && sec1.includes('>Reset</span>'), 'Expected Reset button');
   assert.ok(sec1.includes('id="media-slider"'), 'Expected media slider for overflow past 8 images');
 

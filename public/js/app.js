@@ -787,8 +787,11 @@ function applySettings(s) {
   set('s-gap-mode',     s.gapMode);
   set('music-volume',   s.musicVolume);
   if (s.transitions !== undefined) {
-    $('s-transitions').value = s.transitions ? 'on' : 'off';
-    toggleTransitionTypes(s.transitions);
+    const isTransOn = typeof s.transitions === 'object' && s.transitions !== null
+      ? Boolean(s.transitions.enabled)
+      : Boolean(s.transitions);
+    if ($('s-transitions')) $('s-transitions').value = isTransOn ? 'on' : 'off';
+    toggleTransitionTypes(isTransOn);
   }
   if (s.motionEffects) {
     $('fx-zoomIn').checked   = !!s.motionEffects.zoomIn;
