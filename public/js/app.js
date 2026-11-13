@@ -96,7 +96,58 @@ function setPreviewFrame(clipOrFile) {
 // SECTION 1 — MEDIA
 // ══════════════════════════════════════════════════════════════════════════
 
-$('btn-add-folder').onclick = () => $('input-folder').click();
+$('btn-add-folder').onclick = async () => {
+  const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  if (isLocalhost) {
+    try {
+      const btn = $('btn-add-folder');
+      btn.disabled = true;
+      const statusEl = $('media-upload-status');
+      if (statusEl) {
+        statusEl.classList.remove('hidden');
+        statusEl.textContent = 'Opening folder picker…';
+      }
+
+      const res = await api('POST', '/api/select-folder');
+      if (res && res.path) {
+        if (statusEl) statusEl.textContent = 'Scanning folder on PC…';
+        const scanRes = await api('POST', '/api/scan-folder', { folderPath: res.path });
+        if (scanRes && Array.isArray(scanRes.files) && scanRes.files.length) {
+          let added = 0;
+          for (const f of scanRes.files) {
+            if (state.files.some(existing => existing.name === f.name)) continue;
+            state.files.push({
+              name: f.name,
+              path: f.path,
+              objectUrl: `/api/media-preview?path=${encodeURIComponent(f.path)}`,
+              file: null,
+              type: f.type,
+              uploading: false,
+            });
+            added++;
+          }
+          renderMediaGrid();
+          await rebuildTimeline();
+          if (statusEl) {
+            statusEl.textContent = `✓ Loaded ${added} files directly from PC`;
+            setTimeout(() => statusEl.classList.add('hidden'), 3500);
+          }
+          btn.disabled = false;
+          return;
+        }
+      }
+      btn.disabled = false;
+      if (statusEl) statusEl.classList.add('hidden');
+    } catch (e) {
+      console.warn('Native folder selection fallback:', e);
+      if ($('media-upload-status')) $('media-upload-status').classList.add('hidden');
+      $('btn-add-folder').disabled = false;
+    }
+  }
+
+  // Fallback to browser folder input
+  $('input-folder').click();
+};
 $('btn-add-files').onclick  = () => $('input-files').click();
 $('btn-clear').onclick      = clearMedia;
 
@@ -303,44 +354,73 @@ async function addFiles(fileList) {
 async function uploadMediaFiles(files) {
   isUploadingMedia = true;
   const statusEl = $('media-upload-status');
-  statusEl.classList.remove('hidden');
+  if (statusEl) statusEl.classList.remove('hidden');
 
-  const BATCH = 50;
+  const BATCH = 10;
   let completed = 0;
+  let failedCount = 0;
 
-  for (let i = 0; i < files.length; i += BATCH) {
-    const batch = files.slice(i, i + BATCH);
-    statusEl.textContent = `Uploading ${completed + 1}–${Math.min(completed + batch.length, files.length)} of ${files.length}...`;
+  try {
+    for (let i = 0; i < files.length; i += BATCH) {
+      const batch = files.slice(i, i + BATCH);
+      if (statusEl) {
+        statusEl.textContent = `Uploading ${completed + 1}–${Math.min(completed + batch.length, files.length)} of ${files.length}...`;
+      }
 
-    const formData = new FormData();
-    for (const f of batch) {
-      formData.append('media', f, f.name);
-    }
+      const formData = new FormData();
+      for (const f of batch) {
+        formData.append('media', f, f.name);
+      }
 
-    try {
-      const res = await fetch('/api/upload-media', {
-        method: 'POST',
-        body: formData
-      });
-      const data = await res.json();
-      if (data.ok && data.files) {
-        for (const uf of data.files) {
-          const item = state.files.find(f => f.name === uf.name);
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 60000);
+        const res = await fetch('/api/upload-media', {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal
+        });
+        clearTimeout(timer);
+
+        if (!res.ok) {
+          throw new Error(`Server returned HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        if (data.ok && data.files) {
+          for (const uf of data.files) {
+            const item = state.files.find(f => f.name === uf.name);
+            if (item) {
+              item.path = uf.path;
+              item.uploading = false;
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error uploading media batch:', err);
+        failedCount += batch.length;
+        for (const f of batch) {
+          const item = state.files.find(item => item.name === f.name);
           if (item) {
-            item.path = uf.path;
             item.uploading = false;
+            item.uploadError = true;
           }
         }
       }
-    } catch (err) {
-      console.error('Error uploading media batch:', err);
+      completed += batch.length;
     }
-    completed += batch.length;
-  }
 
-  statusEl.textContent = '✓ Media ready';
-  setTimeout(() => statusEl.classList.add('hidden'), 3000);
-  isUploadingMedia = false;
+    if (statusEl) {
+      if (failedCount > 0) {
+        statusEl.textContent = `⚠ ${files.length - failedCount}/${files.length} ready (${failedCount} failed)`;
+      } else {
+        statusEl.textContent = '✓ Media ready';
+      }
+      setTimeout(() => statusEl.classList.add('hidden'), 3500);
+    }
+  } finally {
+    isUploadingMedia = false;
+  }
 }
 
 function clearMedia() {
@@ -506,28 +586,57 @@ $('input-voiceover').onchange = async (e) => {
   if (!file) return;
   $('voiceover-name').textContent = `Uploading ${file.name}...`;
 
+  // Pre-calculate audio duration in browser immediately
+  let clientDuration = 0;
+  try {
+    const audioObj = new Audio(URL.createObjectURL(file));
+    await new Promise((res) => {
+      audioObj.onloadedmetadata = () => {
+        clientDuration = audioObj.duration || 0;
+        res();
+      };
+      audioObj.onerror = () => res();
+      setTimeout(res, 2000);
+    });
+  } catch {}
+
   const formData = new FormData();
   formData.append('audio', file, file.name);
 
   try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30000);
     const res = await fetch('/api/upload-audio', {
       method: 'POST',
-      body: formData
+      body: formData,
+      signal: controller.signal
     });
+    clearTimeout(timer);
     const data = await res.json();
     if (data.ok) {
-      state.voiceover = { file, path: data.path, duration: data.duration, name: data.name };
-      $('voiceover-name').textContent = `${data.name} (${formatTime(data.duration)})`;
+      const duration = data.duration || clientDuration;
+      state.voiceover = { file, path: data.path, duration, name: data.name || file.name };
+      $('voiceover-name').textContent = `${state.voiceover.name} (${formatTime(duration)})`;
       $('btn-remove-voiceover').classList.remove('hidden');
       const canvas = $('timeline-canvas') || $('waveform-canvas');
-      if (canvas) await renderWaveform(canvas, file, state.totalDuration || data.duration);
+      if (canvas) await renderWaveform(canvas, file, state.totalDuration || duration);
       initTimelineAudio();
       updateTimeline();
     } else {
       $('voiceover-name').textContent = `Upload failed: ${data.error || 'Unknown error'}`;
     }
   } catch (err) {
-    $('voiceover-name').textContent = `Upload failed: ${err.message}`;
+    if (clientDuration > 0) {
+      state.voiceover = { file, path: file.path || null, duration: clientDuration, name: file.name };
+      $('voiceover-name').textContent = `${file.name} (${formatTime(clientDuration)})`;
+      $('btn-remove-voiceover').classList.remove('hidden');
+      const canvas = $('timeline-canvas') || $('waveform-canvas');
+      if (canvas) await renderWaveform(canvas, file, state.totalDuration || clientDuration);
+      initTimelineAudio();
+      updateTimeline();
+    } else {
+      $('voiceover-name').textContent = `Upload failed: ${err.message}`;
+    }
   }
 };
 $('btn-remove-voiceover').onclick = () => {
@@ -550,25 +659,51 @@ $('input-music').onchange = async (e) => {
   if (!file) return;
   $('music-name').textContent = `Uploading ${file.name}...`;
 
+  // Pre-calculate music duration in browser immediately
+  let clientDuration = 0;
+  try {
+    const audioObj = new Audio(URL.createObjectURL(file));
+    await new Promise((res) => {
+      audioObj.onloadedmetadata = () => {
+        clientDuration = audioObj.duration || 0;
+        res();
+      };
+      audioObj.onerror = () => res();
+      setTimeout(res, 2000);
+    });
+  } catch {}
+
   const formData = new FormData();
   formData.append('audio', file, file.name);
 
   try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30000);
     const res = await fetch('/api/upload-audio', {
       method: 'POST',
-      body: formData
+      body: formData,
+      signal: controller.signal
     });
+    clearTimeout(timer);
     const data = await res.json();
     if (data.ok) {
-      state.music = { file, path: data.path, duration: data.duration, name: data.name };
-      $('music-name').textContent = data.name;
+      const duration = data.duration || clientDuration;
+      state.music = { file, path: data.path, duration, name: data.name || file.name };
+      $('music-name').textContent = data.name || file.name;
       $('btn-remove-music').classList.remove('hidden');
       $('music-vol-row').style.display = 'flex';
     } else {
       $('music-name').textContent = `Upload failed: ${data.error || 'Unknown error'}`;
     }
   } catch (err) {
-    $('music-name').textContent = `Upload failed: ${err.message}`;
+    if (clientDuration > 0) {
+      state.music = { file, path: file.path || null, duration: clientDuration, name: file.name };
+      $('music-name').textContent = file.name;
+      $('btn-remove-music').classList.remove('hidden');
+      $('music-vol-row').style.display = 'flex';
+    } else {
+      $('music-name').textContent = `Upload failed: ${err.message}`;
+    }
   }
 };
 $('btn-remove-music').onclick = () => {

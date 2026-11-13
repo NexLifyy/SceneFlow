@@ -77,20 +77,41 @@ function pickAutoMotion(index, enabledEffects = {}) {
  */
 function getAudioDuration(filePath) {
   return new Promise((resolve) => {
+    let resolved = false;
+    const done = (val) => {
+      if (!resolved) {
+        resolved = true;
+        resolve(val);
+      }
+    };
+    const timer = setTimeout(() => done(0), 4000);
     try {
-      const ffprobe = require('ffprobe-static').path;
+      const ffprobeStatic = require('ffprobe-static');
+      const ffprobe = ffprobeStatic?.path || 'ffprobe';
       const proc = spawn(ffprobe, [
         '-v', 'quiet', '-print_format', 'json', '-show_format', filePath
       ]);
       let out = '';
-      proc.stdout.on('data', d => out += d);
+      if (proc.stdout) {
+        proc.stdout.on('data', d => out += d);
+      }
+      proc.on('error', (err) => {
+        clearTimeout(timer);
+        console.warn('ffprobe spawn error in getAudioDuration:', err.message);
+        done(0);
+      });
       proc.on('close', () => {
+        clearTimeout(timer);
         try {
           const info = JSON.parse(out);
-          resolve(parseFloat(info.format?.duration || 0));
-        } catch { resolve(0); }
+          done(parseFloat(info.format?.duration || 0));
+        } catch { done(0); }
       });
-    } catch { resolve(0); }
+    } catch (err) {
+      clearTimeout(timer);
+      console.warn('getAudioDuration exception:', err.message);
+      done(0);
+    }
   });
 }
 

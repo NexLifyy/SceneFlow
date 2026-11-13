@@ -107,10 +107,18 @@ if (typeof cleanupTimer.unref === 'function') cleanupTimer.unref();
 
 // Fix UTF-8 encoding in filenames (handles em-dash, accents, etc.)
 function fixFilenameEncoding(name) {
-  try {
-    const decoded = Buffer.from(name, 'latin1').toString('utf8');
-    if (!decoded.includes('\uFFFD')) return decoded;
-  } catch {}
+  if (!name) return name;
+  // If string contains non-ASCII characters outside Latin-1 range (like em-dash \u2014, en-dash \u2013),
+  // it is ALREADY properly decoded Unicode! DO NOT touch it!
+  if (/[\u0100-\uFFFF]/.test(name)) return name;
+
+  // Only attempt latin1->utf8 fix if it contains typical UTF-8 mojibake patterns
+  if (/[\xC0-\xFF]/.test(name)) {
+    try {
+      const decoded = Buffer.from(name, 'latin1').toString('utf8');
+      if (!decoded.includes('\uFFFD')) return decoded;
+    } catch {}
+  }
   return name;
 }
 
@@ -141,7 +149,17 @@ app.get('/api/media-preview', (req, res) => {
 });
 
 // ── Upload Media (images / videos) ────────────────────────────────────────
-app.post('/api/upload-media', upload.array('media', 1000), (req, res) => {
+app.post('/api/upload-media', (req, res, next) => {
+  req.setTimeout(120000);
+  res.setTimeout(120000);
+  upload.array('media', 1000)(req, res, (err) => {
+    if (err) {
+      console.error('Multer upload-media error:', err);
+      return res.status(400).json({ error: err.message });
+    }
+    next();
+  });
+}, (req, res) => {
   try {
     const VIDEO_EXT = /\.(mp4|mov|avi|mkv|webm|m4v)$/i;
     const uploaded = (req.files || []).map(f => {
@@ -183,7 +201,17 @@ app.post('/api/upload-zip', (req, res, next) => {
 });
 
 // ── Upload Audio (voiceover / background music) ────────────────────────────
-app.post('/api/upload-audio', upload.single('audio'), async (req, res) => {
+app.post('/api/upload-audio', (req, res, next) => {
+  req.setTimeout(60000);
+  res.setTimeout(60000);
+  upload.single('audio')(req, res, (err) => {
+    if (err) {
+      console.error('Multer upload-audio error:', err);
+      return res.status(400).json({ error: err.message });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No audio file uploaded' });
     const name = fixFilenameEncoding(req.file.originalname);
@@ -193,7 +221,7 @@ app.post('/api/upload-audio', upload.single('audio'), async (req, res) => {
       ok: true,
       name,
       path: filePath,
-      duration,
+      duration: duration || 0,
       size: req.file.size
     });
   } catch (e) {
