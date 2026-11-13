@@ -107,6 +107,22 @@ def main():
                     }
                     words.append(word_obj)
                     seg_words.append(word_obj)
+            elif segment.text and segment.text.strip():
+                raw_words = segment.text.strip().split()
+                if raw_words:
+                    seg_dur = max(0.1, segment.end - segment.start)
+                    dur_per_word = seg_dur / len(raw_words)
+                    for idx, rw in enumerate(raw_words):
+                        w_start = segment.start + idx * dur_per_word
+                        w_end = segment.start + (idx + 1) * dur_per_word
+                        word_obj = {
+                            "word": rw,
+                            "start": round(w_start, 3),
+                            "end": round(w_end, 3),
+                            "probability": 0.9
+                        }
+                        words.append(word_obj)
+                        seg_words.append(word_obj)
 
             raw_segments.append({
                 "id": segment.id,

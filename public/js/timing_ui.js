@@ -1161,9 +1161,6 @@ function renderResultsTable() {
     tr.className = b.silent ? 'block-row-silent hover:bg-obsidian-elevated/40 transition' : 'hover:bg-obsidian-elevated/40 transition';
     tr.innerHTML = `
       <td class="col-num py-2 px-3 font-mono text-slate-400 font-bold">${b.number}</td>
-      <td class="col-filename py-2 px-3">
-        <code class="px-2 py-0.5 rounded bg-teal-500/10 border border-teal-500/30 text-teal-300 font-mono text-xs">${b.filename}</code>
-      </td>
       <td class="col-time py-2 px-3 font-mono text-slate-300 text-xs">${formatCaptionTime(b.start)}</td>
       <td class="col-time py-2 px-3 font-mono text-slate-300 text-xs">${formatCaptionTime(b.end)}</td>
       <td class="col-caption py-2 px-3">
@@ -1175,14 +1172,6 @@ function renderResultsTable() {
           <button type="button" class="btn btn-icon btn-ghost btn-xs btn-copy-block p-1.5 rounded hover:bg-obsidian-elevated text-slate-400 hover:text-white transition" title="Copy block caption">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
           </button>
-          <button type="button" class="btn btn-icon btn-ghost btn-xs btn-split-block p-1.5 rounded hover:bg-obsidian-elevated text-slate-400 hover:text-white transition" title="Split block into two">
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="2" x2="12" y2="22"/></svg>
-          </button>
-          ${idx < splitterState.blocks.length - 1 ? `
-            <button type="button" class="btn btn-icon btn-ghost btn-xs btn-merge-block p-1.5 rounded hover:bg-obsidian-elevated text-slate-400 hover:text-white transition" title="Merge with next block">
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 6 4-4 4 4"/><path d="M12 2v10.3a4 4 0 0 1-1.172 2.872L4 22"/><path d="m20 22-5-5"/></svg>
-            </button>
-          ` : ''}
         </div>
       </td>
     `;
@@ -1206,19 +1195,6 @@ function renderResultsTable() {
       navigator.clipboard.writeText(line);
       showToast('Block caption copied!');
     };
-
-    // Split block
-    tr.querySelector('.btn-split-block').onclick = () => {
-      splitSingleBlock(idx);
-    };
-
-    // Merge with next
-    const btnMerge = tr.querySelector('.btn-merge-block');
-    if (btnMerge) {
-      btnMerge.onclick = () => {
-        mergeBlocks(idx);
-      };
-    }
 
     tbody.appendChild(tr);
   });

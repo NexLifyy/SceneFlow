@@ -363,16 +363,50 @@ export async function transcribeInBrowser(audioFile, options = {}, onProgress = 
   const words = [];
   if (result.chunks && Array.isArray(result.chunks)) {
     for (const chunk of result.chunks) {
-      const text = chunk.text;
-      if (!text || !text.trim()) continue;
-      const start = Array.isArray(chunk.timestamp) ? chunk.timestamp[0] : 0;
-      const end = Array.isArray(chunk.timestamp) ? (chunk.timestamp[1] !== null ? chunk.timestamp[1] : (start + 0.35)) : start + 0.35;
-      words.push({
-        word: chunk.text,
-        start: Math.round(start * 100) / 100,
-        end: Math.round(end * 100) / 100,
-        probability: 0.95
-      });
+      const text = (chunk.text || '').trim();
+      if (!text) continue;
+      const start = Array.isArray(chunk.timestamp) ? (chunk.timestamp[0] ?? 0) : 0;
+      const end = Array.isArray(chunk.timestamp)
+        ? (chunk.timestamp[1] !== null && chunk.timestamp[1] !== undefined ? chunk.timestamp[1] : (start + 0.35))
+        : (start + 0.35);
+      const chunkDur = Math.max(0.1, end - start);
+
+      if (chunk.words && Array.isArray(chunk.words) && chunk.words.length > 0) {
+        for (const w of chunk.words) {
+          const wText = (w.word || w.text || '').trim();
+          if (!wText) continue;
+          const wStart = Array.isArray(w.timestamp) ? (w.timestamp[0] ?? start) : start;
+          const wEnd = Array.isArray(w.timestamp) ? (w.timestamp[1] ?? (wStart + 0.3)) : (wStart + 0.3);
+          words.push({
+            word: wText,
+            start: Math.round(wStart * 100) / 100,
+            end: Math.round(wEnd * 100) / 100,
+            probability: 0.95
+          });
+        }
+      } else {
+        const rawTokens = text.split(/\s+/).filter(Boolean);
+        if (rawTokens.length <= 1) {
+          words.push({
+            word: text,
+            start: Math.round(start * 100) / 100,
+            end: Math.round(end * 100) / 100,
+            probability: 0.95
+          });
+        } else {
+          const durPerWord = chunkDur / rawTokens.length;
+          rawTokens.forEach((rw, idx) => {
+            const wStart = start + idx * durPerWord;
+            const wEnd = start + (idx + 1) * durPerWord;
+            words.push({
+              word: rw,
+              start: Math.round(wStart * 100) / 100,
+              end: Math.round(wEnd * 100) / 100,
+              probability: 0.95
+            });
+          });
+        }
+      }
     }
   }
 

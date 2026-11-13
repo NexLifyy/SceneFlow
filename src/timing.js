@@ -329,7 +329,11 @@ function generateFixedCuts(interval, totalSec, words, avoidCut, pauseThreshold) 
       }
     }
     cuts.push(cutPoint);
-    cur += interval;
+    if (avoidCut && cutPoint !== cur) {
+      cur = cutPoint + interval;
+    } else {
+      cur += interval;
+    }
   }
   cuts.push(totalSec);
   return cuts;
