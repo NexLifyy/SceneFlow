@@ -384,14 +384,9 @@ app.post('/api/open-folder', (req, res) => {
 
   if (fs.existsSync(winPath)) {
     const stat = fs.statSync(winPath);
-    if (stat.isFile()) {
-      // Highlight the exported video file directly in Explorer
-      launchExplorer([`/select,${winPath}`]);
-      return res.json({ ok: true, type: 'file', path: winPath });
-    } else {
-      launchExplorer([winPath]);
-      return res.json({ ok: true, type: 'directory', path: winPath });
-    }
+    const targetDir = stat.isFile() ? path.dirname(winPath) : winPath;
+    launchExplorer([targetDir]);
+    return res.json({ ok: true, type: 'directory', path: targetDir });
   } else {
     // If exact target doesn't exist yet, try its parent directory
     const parentDir = path.dirname(winPath);
@@ -493,6 +488,10 @@ app.post('/api/export', async (req, res) => {
           fs.mkdirSync(subDir, { recursive: true });
           if (isDirWritable(subDir)) outDir = subDir;
         } catch {}
+        if (!isDirWritable(outDir)) {
+          outDir = EXPORTS_DIR;
+          if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+        }
       }
 
       const cleanFileName = (jobData.fileName || `export_${Date.now()}`).replace(/\.mp4$/i, '') + '.mp4';

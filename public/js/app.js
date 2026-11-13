@@ -414,6 +414,10 @@ async function uploadMediaFiles(files) {
               item.path = uf.path;
               item.uploading = false;
             }
+            const clip = state.clips.find(c => c.name === uf.name);
+            if (clip) {
+              clip.path = uf.path;
+            }
           }
         }
       } catch (err) {
@@ -427,9 +431,21 @@ async function uploadMediaFiles(files) {
               item.path = `client:${f.name}`;
             }
           }
+          const clip = state.clips.find(c => c.name === f.name);
+          if (clip && !clip.path) {
+            clip.path = `client:${f.name}`;
+          }
         }
       }
       completed += batch.length;
+    }
+
+    // Ensure all timeline clips have their paths synced
+    for (const clip of state.clips) {
+      if (!clip.path) {
+        const item = state.files.find(f => f.name === clip.name);
+        if (item && item.path) clip.path = item.path;
+      }
     }
 
     if (statusEl) {
@@ -1893,7 +1909,7 @@ async function startExport() {
     return;
   }
 
-  const isWebDeployment = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+  const isWebDeployment = typeof window !== 'undefined' && window.location.hostname.includes('vercel.app');
   if (isWebDeployment) {
     showExportError('Cloud Note: Vercel serverless hosting has a 10s execution limit and cannot encode full videos with desktop FFmpeg. To render your finished video, run SceneFlow on your local PC via start.bat (http://localhost:3000). All Voiceover, Timing, Prompts, and Studio timeline preview features run live here.');
     return;
@@ -1904,9 +1920,19 @@ async function startExport() {
     return;
   }
 
+  // Sync any newly available file paths from state.files to state.clips
+  for (const clip of state.clips) {
+    if (!clip.path) {
+      const match = state.files.find(f => f.name === clip.name);
+      if (match && match.path) {
+        clip.path = match.path;
+      }
+    }
+  }
+
   const missing = state.clips.filter(c => c.type !== 'gap' && !c.path);
   if (missing.length > 0) {
-    showExportError(`Media file "${missing[0].name}" is missing a local file path. Please re-add your files or use "Add Zip".`);
+    showExportError(`Media file "${missing[0].name}" is still preparing or missing a local path. Please wait a moment or re-add the files.`);
     return;
   }
 
@@ -2141,19 +2167,14 @@ function showExportDone(data, resetPlayerCb, trackUrlCb) {
   }
   if ($('btn-open-folder')) {
     $('btn-open-folder').onclick = async () => {
-      if (customDirHandle && typeof window.showDirectoryPicker === 'function') {
+      const p = data.outputPath || (outDirInput ? outDirInput.value : '');
+      if (p) {
         try {
-          await window.showDirectoryPicker({
-            id: 'sceneflow-export-folder',
-            startIn: customDirHandle,
-          });
-          return;
+          await api('POST', '/api/open-folder', { folderPath: p });
         } catch (err) {
-          if (err && err.name === 'AbortError') return;
+          console.warn('Could not open folder via API:', err);
         }
       }
-      const p = data.outputPath || (outDirInput ? outDirInput.value : '');
-      if (p) api('POST', '/api/open-folder', { folderPath: p });
     };
   }
 
@@ -2181,7 +2202,16 @@ function showExportError(msg) {
   if ($('export-error')) $('export-error').classList.remove('hidden');
   if ($('export-error-msg')) $('export-error-msg').textContent = msg;
 
-  if ($('render-status-text')) $('render-status-text').textContent = `Render Error: ${msg}`;
+  if ($('render-modal')) $('render-modal').classList.remove('hidden');
+  if ($('render-status-text')) $('render-status-text').textContent = `Render Notice: ${msg}`;
+  if ($('render-progress-val')) $('render-progress-val').textContent = '!';
+  if ($('render-progress-bar')) {
+    $('render-progress-bar').style.width = '100%';
+    $('render-progress-bar').className = 'h-full bg-rose-500 rounded-full transition-all duration-300';
+  }
+  if ($('render-modal-dot')) {
+    $('render-modal-dot').className = 'w-2.5 h-2.5 rounded-full bg-rose-500';
+  }
   if ($('btn-close-modal')) {
     $('btn-close-modal').classList.remove('hidden');
     $('btn-close-modal').onclick = () => $('render-modal').classList.add('hidden');
