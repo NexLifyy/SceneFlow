@@ -34,9 +34,9 @@ test('browser_renderer.js exports BROWSER_RESOLUTIONS, compileVideoInBrowser, an
   assert.ok(typeof brModule.triggerFileDownload === 'function', 'triggerFileDownload should be exported');
 });
 
-test('app.js integrates in-browser export for web deployments', () => {
+test('app.js integrates 1-click render package export for web deployments', () => {
   const appJs = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'app.js'), 'utf8');
-  assert.ok(appJs.includes("import { compileVideoInBrowser, triggerFileDownload } from './browser_renderer.js'"), 'app.js should import browser_renderer');
-  assert.ok(appJs.includes('startBrowserExport()'), 'startExport should route to startBrowserExport for web deployments');
-  assert.ok(appJs.includes('Hardware: Browser WebCodecs'), 'UI should display Browser WebCodecs hardware indicator');
+  assert.ok(appJs.includes("from './package_exporter.js'"), 'app.js should import package_exporter');
+  assert.ok(appJs.includes('startRenderPackageExport()'), 'startExport should route to startRenderPackageExport for web deployments');
+  assert.ok(appJs.includes('1-Click Offline FFmpeg Engine') || appJs.includes('Download Render Package'), 'UI should indicate 1-click offline render package');
 });

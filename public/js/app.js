@@ -11,6 +11,7 @@ import { initPromptsUI } from './prompts_ui.js';
 import { initImagesUI } from './images_ui.js';
 import { getBlockFilename } from './timing_client.js';
 import { compileVideoInBrowser, triggerFileDownload } from './browser_renderer.js';
+import { buildRenderPackage } from './package_exporter.js';
 
 // ── State ────────────────────────────────────────────────────────────────
 const state = {
@@ -1887,7 +1888,15 @@ function estimatedBytes() {
 }
 
 const btnCreateVideo = $('btn-create-video') || $('btn-render');
-if (btnCreateVideo) btnCreateVideo.onclick = startExport;
+if (btnCreateVideo) {
+  btnCreateVideo.onclick = startExport;
+  const isWebDeployment = typeof window !== 'undefined' && window.location.hostname.includes('vercel.app');
+  if (isWebDeployment) {
+    const textSpan = btnCreateVideo.querySelector('span.tracking-wide') || btnCreateVideo;
+    if (textSpan) textSpan.textContent = '📦 Download 1-Click Render Package (.zip)';
+    btnCreateVideo.title = 'Download self-contained ZIP with media, scripts, and 1-click render.bat for full 2K/4K FFmpeg compile on PC';
+  }
+}
 
 const btnCancelExport = $('btn-cancel-export') || $('btn-cancel-render');
 if (btnCancelExport) btnCancelExport.onclick = cancelExport;
@@ -1925,15 +1934,81 @@ function resetRenderPlayer() {
   }
 }
 
-async function startBrowserExport() {
+function showPackageExportDone(pkg) {
+  if ($('export-progress')) $('export-progress').classList.add('hidden');
+  if ($('export-done')) $('export-done').classList.remove('hidden');
+  if ($('btn-create-video')) $('btn-create-video').classList.remove('hidden');
+  if ($('btn-render')) $('btn-render').classList.remove('hidden');
+  if ($('render-modal-dot')) {
+    $('render-modal-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
+  }
+  if ($('btn-close-modal')) {
+    $('btn-close-modal').classList.remove('hidden');
+    $('btn-close-modal').onclick = () => {
+      $('render-modal').classList.add('hidden');
+    };
+  }
+
+  const mb = (pkg.fileSize / 1_048_576).toFixed(1);
+  if ($('render-progress-bar')) $('render-progress-bar').style.width = '100%';
+  if ($('render-progress-val')) $('render-progress-val').textContent = '100%';
+  if ($('render-status-text')) $('render-status-text').textContent = '✓ 1-Click Render Package Downloaded!';
+  if ($('render-eta-text')) $('render-eta-text').textContent = `Package Size: ${mb} MB (${pkg.resolution})`;
+
+  const card = $('render-modal-card');
+  if (card) {
+    card.classList.remove('max-w-md');
+    card.classList.add('max-w-2xl');
+  }
+
+  const wrap = $('render-player-wrap');
+  if (wrap) {
+    wrap.classList.remove('hidden');
+    wrap.innerHTML = `
+      <div class="rounded-xl border border-emerald-500/40 bg-emerald-950/20 p-4 text-xs space-y-3 font-sans">
+        <div class="font-bold text-emerald-400 text-sm flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path></svg>
+          <span>Downloaded: ${pkg.fileName}</span>
+        </div>
+        <div class="text-slate-300 space-y-2 leading-relaxed">
+          <p class="font-semibold text-slate-200">How to compile your video in full quality on your PC:</p>
+          <ol class="list-decimal list-inside space-y-1.5 text-slate-300">
+            <li><strong>Extract</strong> the downloaded ZIP file into a folder on your computer.</li>
+            <li>Double-click <code class="text-emerald-300 bg-obsidian-950 px-1.5 py-0.5 rounded border border-emerald-500/30 font-mono font-bold">render.bat</code> (Windows) or run <code class="text-emerald-300 bg-obsidian-950 px-1.5 py-0.5 rounded border border-emerald-500/30 font-mono font-bold">./render.sh</code> (Mac/Linux).</li>
+            <li>FFmpeg will compile your video with <strong>full ${pkg.resolution} resolution, Ken Burns zoom/pan motion, transitions, voiceover audio, music, and kinetic subtitles</strong> in ~5 seconds!</li>
+          </ol>
+        </div>
+        <div class="pt-2 border-t border-emerald-500/20 text-[11px] text-slate-400">
+          💡 <em>Pro Tip: When running SceneFlow locally on your PC via <code class="text-slate-300">start.bat</code> (http://localhost:3000), "Create Video" renders directly with GPU NVENC in 1 click without downloading ZIPs!</em>
+        </div>
+      </div>
+    `;
+  }
+
+  if ($('render-complete-actions')) {
+    $('render-complete-actions').classList.remove('hidden');
+    $('render-complete-actions').innerHTML = `
+      <button id="btn-pkg-download-again" type="button" class="flex-1 py-2 bg-[#14B8A6] hover:bg-[#2DD4BF] text-[#0B0F14] font-bold text-xs rounded-lg transition">
+        📦 Download Package Again
+      </button>
+      <button id="btn-pkg-done-close" type="button" class="px-4 py-2 bg-obsidian-800 hover:bg-obsidian-750 text-slate-300 text-xs rounded-lg border border-obsidian-700 transition">
+        Close
+      </button>
+    `;
+    $('btn-pkg-download-again').onclick = () => triggerFileDownload(pkg.blob, pkg.fileName);
+    $('btn-pkg-done-close').onclick = () => $('render-modal').classList.add('hidden');
+  }
+}
+
+async function startRenderPackageExport() {
   if (!state.clips.length) {
     showExportError('No clips in timeline. Add images or videos first.');
     return;
   }
 
   const fileNameInput = $('out-filename') || $('export-filename');
-  const fileName = ((fileNameInput ? fileNameInput.value.trim() : '') || 'export') + '.mp4';
-  const resolution = $('s-resolution') ? $('s-resolution').value : '720p';
+  const outFileName = ((fileNameInput ? fileNameInput.value.trim() : '') || 'sceneflow_project');
+  const resolution = $('s-resolution') ? $('s-resolution').value : '1080p';
 
   resetRenderPlayer();
 
@@ -1943,37 +2018,33 @@ async function startBrowserExport() {
   if ($('render-modal')) $('render-modal').classList.remove('hidden');
   if ($('btn-create-video')) $('btn-create-video').classList.add('hidden');
   if ($('btn-render')) $('btn-render').classList.add('hidden');
-  if ($('btn-cancel-export')) $('btn-cancel-export').classList.remove('hidden');
-  if ($('btn-cancel-render')) $('btn-cancel-render').classList.remove('hidden');
+  if ($('btn-cancel-export')) $('btn-cancel-export').classList.add('hidden');
+  if ($('btn-cancel-render')) $('btn-cancel-render').classList.add('hidden');
   if ($('render-complete-actions')) $('render-complete-actions').classList.add('hidden');
   if ($('btn-close-modal')) $('btn-close-modal').classList.add('hidden');
   if ($('render-modal-dot')) {
-    $('render-modal-dot').className = 'w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse';
+    $('render-modal-dot').className = 'w-2.5 h-2.5 rounded-full bg-teal-400 animate-pulse';
   }
 
   const hwEl = $('render-modal')?.querySelector('.text-\\[11px\\].font-mono.text-slate-500 span:first-child');
-  if (hwEl) hwEl.textContent = 'Hardware: Browser WebCodecs';
+  if (hwEl) hwEl.textContent = 'Package: 1-Click Offline FFmpeg Engine';
 
   if ($('progress-bar')) $('progress-bar').style.width = '0%';
   if ($('progress-pct')) $('progress-pct').textContent = '0%';
-  if ($('progress-stage')) $('progress-stage').textContent = 'Preparing browser engine…';
+  if ($('progress-stage')) $('progress-stage').textContent = 'Packaging media assets…';
   if ($('render-progress-bar')) $('render-progress-bar').style.width = '0%';
   if ($('render-progress-val')) $('render-progress-val').textContent = '0%';
-  if ($('render-status-text')) $('render-status-text').textContent = 'Initializing in-browser video compiler…';
-  if ($('render-eta-text')) $('render-eta-text').textContent = 'ETA: calculating…';
-
-  state.exportStartTime = Date.now();
-  browserExportAbortController = new AbortController();
+  if ($('render-status-text')) $('render-status-text').textContent = 'Generating 1-Click Render Package…';
+  if ($('render-eta-text')) $('render-eta-text').textContent = 'Assembling assets…';
 
   try {
-    const result = await compileVideoInBrowser({
+    const pkg = await buildRenderPackage({
       clips: state.clips,
       files: state.files,
       voiceover: state.voiceover,
       music: state.music,
       musicVolume: $('music-volume') ? parseFloat($('music-volume').value) : 0.15,
       captionLines: state.captionLines,
-      captionStyle: state.captionStyle,
       captionFont: state.captionFont,
       captionColor: state.captionColor,
       captionHighlight: state.captionHighlight,
@@ -1981,36 +2052,22 @@ async function startBrowserExport() {
       captionPosition: state.captionPosition,
       resolution,
       fps: 30,
-      fileName,
-      onProgress: ({ pct, stage, etaSec }) => {
+      outFileName,
+      onProgress: ({ pct, stage }) => {
         if ($('progress-bar')) $('progress-bar').style.width = `${pct}%`;
         if ($('progress-pct')) $('progress-pct').textContent = `${pct}%`;
         if ($('progress-stage')) $('progress-stage').textContent = stage;
         if ($('render-progress-bar')) $('render-progress-bar').style.width = `${pct}%`;
         if ($('render-progress-val')) $('render-progress-val').textContent = `${pct}%`;
         if ($('render-status-text')) $('render-status-text').textContent = stage;
-        if (etaSec > 0) {
-          const etaStr = `ETA: ${formatTime(etaSec)}`;
-          if ($('progress-eta')) $('progress-eta').textContent = etaStr;
-          if ($('render-eta-text')) $('render-eta-text').textContent = etaStr;
-        }
-      },
-      signal: browserExportAbortController.signal,
+      }
     });
 
-    // Automatically trigger browser download of the finished video file
-    triggerFileDownload(result.blob, result.fileName);
-
-    showExportDone(result, () => resetRenderPlayer(), (url) => { activeRenderObjectUrl = url; });
+    triggerFileDownload(pkg.blob, pkg.fileName);
+    showPackageExportDone(pkg);
 
   } catch (err) {
-    if (err && err.message === 'Render cancelled by user') {
-      $('render-modal').classList.add('hidden');
-      return;
-    }
-    showExportError(`Browser render error: ${err.message}`);
-  } finally {
-    browserExportAbortController = null;
+    showExportError(`Package error: ${err.message}`);
   }
 }
 
@@ -2022,7 +2079,7 @@ async function startExport() {
 
   const isWebDeployment = typeof window !== 'undefined' && window.location.hostname.includes('vercel.app');
   if (isWebDeployment) {
-    return startBrowserExport();
+    return startRenderPackageExport();
   }
 
   if (isUploadingMedia) {
