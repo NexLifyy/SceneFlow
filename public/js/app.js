@@ -10,8 +10,6 @@ import { initVoiceoverUI } from './voice_ui.js';
 import { initPromptsUI } from './prompts_ui.js';
 import { initImagesUI } from './images_ui.js';
 import { getBlockFilename } from './timing_client.js';
-import { compileVideoInBrowser, triggerFileDownload } from './browser_renderer.js';
-import { buildRenderPackage } from './package_exporter.js';
 
 // ── State ────────────────────────────────────────────────────────────────
 const state = {
@@ -98,7 +96,7 @@ function setPreviewFrame(clipOrFile) {
 // SECTION 1 — MEDIA
 // ══════════════════════════════════════════════════════════════════════════
 
-if ($('btn-add-folder')) $('btn-add-folder').onclick = async () => {
+$('btn-add-folder').onclick = async () => {
   const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
   if (isLocalhost) {
     try {
@@ -150,8 +148,8 @@ if ($('btn-add-folder')) $('btn-add-folder').onclick = async () => {
   // Fallback to browser folder input
   $('input-folder').click();
 };
-if ($('btn-add-files') && $('input-files')) $('btn-add-files').onclick = () => $('input-files').click();
-if ($('btn-clear')) $('btn-clear').onclick = clearMedia;
+$('btn-add-files').onclick  = () => $('input-files').click();
+$('btn-clear').onclick      = clearMedia;
 
 if ($('btn-add-zip') && $('input-zip')) {
   $('btn-add-zip').onclick = () => $('input-zip').click();
@@ -238,28 +236,26 @@ if ($('btn-confirm-scan-modal')) {
   };
 }
 
-if ($('input-folder')) $('input-folder').onchange = (e) => { addFiles(e.target.files); e.target.value = ''; };
-if ($('input-files')) $('input-files').onchange  = (e) => { addFiles(e.target.files); e.target.value = ''; };
+$('input-folder').onchange = (e) => { addFiles(e.target.files); e.target.value = ''; };
+$('input-files').onchange  = (e) => { addFiles(e.target.files); e.target.value = ''; };
 
 // Drop zone
 const dropZone = $('drop-zone');
-if (dropZone) {
-  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-  dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('drag-over');
-    if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
-  });
-  dropZone.addEventListener('click', (e) => {
-    if (!state.files.length && !e.target.closest('#media-viewport')) {
-      if ($('input-files')) $('input-files').click();
-    }
-  });
-  dropZone.addEventListener('keydown', (e) => {
-    if ((e.key === 'Enter' || e.key === ' ') && $('input-files')) $('input-files').click();
-  });
-}
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+});
+dropZone.addEventListener('click', (e) => {
+  if (!state.files.length && !e.target.closest('#media-viewport')) {
+    $('input-files').click();
+  }
+});
+dropZone.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') $('input-files').click();
+});
 
 let isUploadingMedia = false;
 
@@ -510,28 +506,22 @@ function clearMedia() {
 }
 
 function renderMediaGrid() {
-  if ($('studio-images-count')) {
-    const count = state.files.filter(f => f.type === 'image').length;
-    $('studio-images-count').textContent = count > 0 ? `✓ ${count} image(s) attached` : '0 images attached';
-    $('studio-images-count').className = count > 0 ? 'text-teal-400 font-mono text-[11px] font-semibold' : 'text-slate-400 font-mono text-[11px]';
-  }
-  const grid = $('media-grid');
-  if (!grid) return;
   const viewport = $('media-viewport');
+  const grid = $('media-grid');
   const sliderWrap = $('media-slider-wrap');
   const slider = $('media-slider');
   const sliderCount = $('media-slider-count');
-  const hintWrap = dropZone ? dropZone.querySelector('.drop-hint-wrap') : null;
+  const hintWrap = dropZone.querySelector('.drop-hint-wrap');
   grid.innerHTML = '';
   grid.scrollLeft = 0;
 
   if (state.files.length === 0) {
-    if (hintWrap) hintWrap.style.display = 'flex';
+    hintWrap.style.display = 'flex';
     if (viewport) viewport.classList.add('hidden');
     if (sliderWrap) sliderWrap.classList.add('hidden');
     return;
   }
-  if (hintWrap) hintWrap.style.display = 'none';
+  hintWrap.style.display = 'none';
   if (viewport) viewport.classList.remove('hidden');
 
   for (const f of state.files) {
@@ -624,8 +614,8 @@ function renderMediaGrid() {
 }
 
 // ── Voiceover ─────────────────────────────────────────────────────────────
-if ($('btn-add-voiceover') && $('input-voiceover')) $('btn-add-voiceover').onclick = () => $('input-voiceover').click();
-if ($('input-voiceover')) $('input-voiceover').onchange = async (e) => {
+$('btn-add-voiceover').onclick = () => $('input-voiceover').click();
+$('input-voiceover').onchange = async (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
@@ -686,7 +676,7 @@ if ($('input-voiceover')) $('input-voiceover').onchange = async (e) => {
     }
   }
 };
-if ($('btn-remove-voiceover')) $('btn-remove-voiceover').onclick = () => {
+$('btn-remove-voiceover').onclick = () => {
   state.voiceover = null;
   $('voiceover-name').textContent = 'No voiceover added';
   $('btn-remove-voiceover').classList.add('hidden');
@@ -700,8 +690,8 @@ if ($('btn-remove-voiceover')) $('btn-remove-voiceover').onclick = () => {
 };
 
 // ── Background Music ──────────────────────────────────────────────────────
-if ($('btn-add-music') && $('input-music')) $('btn-add-music').onclick = () => $('input-music').click();
-if ($('input-music')) $('input-music').onchange = async (e) => {
+$('btn-add-music').onclick = () => $('input-music').click();
+$('input-music').onchange = async (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
@@ -759,17 +749,15 @@ if ($('input-music')) $('input-music').onchange = async (e) => {
     }
   }
 };
-if ($('btn-remove-music')) $('btn-remove-music').onclick = () => {
+$('btn-remove-music').onclick = () => {
   state.music = null;
-  if ($('music-name')) $('music-name').textContent = 'No music added';
-  if ($('btn-remove-music')) $('btn-remove-music').classList.add('hidden');
-  if ($('music-vol-row')) $('music-vol-row').style.display = 'none';
+  $('music-name').textContent = 'No music added';
+  $('btn-remove-music').classList.add('hidden');
+  $('music-vol-row').style.display = 'none';
 };
-if ($('music-volume')) {
-  $('music-volume').oninput = (e) => {
-    if ($('music-volume-val')) $('music-volume-val').textContent = `${Math.round(e.target.value * 100)}%`;
-  };
-}
+$('music-volume').oninput = (e) => {
+  $('music-volume-val').textContent = `${Math.round(e.target.value * 100)}%`;
+};
 
 // ══════════════════════════════════════════════════════════════════════════
 // SECTION 2 — SETTINGS
@@ -777,29 +765,29 @@ if ($('music-volume')) {
 
 function getSettings() {
   return {
-    videoSize:    $('s-video-size') ? $('s-video-size').value : '1080p',
-    quality:      $('s-quality') ? $('s-quality').value : 'youtube',
-    fps:          $('s-fps') ? parseInt($('s-fps').value) : 30,
-    fitMode:      $('s-fit-mode') ? $('s-fit-mode').value : 'contain',
-    imageMotion:  $('s-motion') ? $('s-motion').value : 'auto',
-    motionSpeed:  $('s-motion-speed') ? $('s-motion-speed').value : 'medium',
-    gapMode:      $('s-gap-mode') ? $('s-gap-mode').value : 'extend',
-    transitions:  $('s-transitions') ? $('s-transitions').value !== 'off' : false,
-    musicVolume:  $('music-volume') ? parseFloat($('music-volume').value) : 0.15,
+    videoSize:    $('s-video-size').value,
+    quality:      $('s-quality').value,
+    fps:          parseInt($('s-fps').value),
+    fitMode:      $('s-fit-mode').value,
+    imageMotion:  $('s-motion').value,
+    motionSpeed:  $('s-motion-speed').value,
+    gapMode:      $('s-gap-mode').value,
+    transitions:  $('s-transitions').value !== 'off',
+    musicVolume:  parseFloat($('music-volume').value),
     motionEffects: {
-      zoomIn:   $('fx-zoomIn') ? $('fx-zoomIn').checked : true,
-      zoomOut:  $('fx-zoomOut') ? $('fx-zoomOut').checked : true,
-      panLeft:  $('fx-panLeft') ? $('fx-panLeft').checked : true,
-      panRight: $('fx-panRight') ? $('fx-panRight').checked : true,
+      zoomIn:   $('fx-zoomIn').checked,
+      zoomOut:  $('fx-zoomOut').checked,
+      panLeft:  $('fx-panLeft').checked,
+      panRight: $('fx-panRight').checked,
     },
     transitionTypes: {
-      fade:     $('tr-fade') ? $('tr-fade').checked : true,
-      dissolve: $('tr-dissolve') ? $('tr-dissolve').checked : true,
-      slide:    $('tr-slide') ? $('tr-slide').checked : true,
-      wipe:     $('tr-wipe') ? $('tr-wipe').checked : true,
-      zoom:     $('tr-zoom') ? $('tr-zoom').checked : true,
+      fade:     $('tr-fade').checked,
+      dissolve: $('tr-dissolve').checked,
+      slide:    $('tr-slide').checked,
+      wipe:     $('tr-wipe').checked,
+      zoom:     $('tr-zoom').checked,
     },
-    transitionSoundsVolume: $('s-trans-vol') ? parseFloat($('s-trans-vol').value) : 0.5,
+    transitionSoundsVolume: parseFloat($('s-trans-vol').value),
   };
 }
 
@@ -822,10 +810,10 @@ function applySettings(s) {
     toggleTransitionTypes(isTransOn);
   }
   if (s.motionEffects) {
-    if ($('fx-zoomIn')) $('fx-zoomIn').checked   = !!s.motionEffects.zoomIn;
-    if ($('fx-zoomOut')) $('fx-zoomOut').checked  = !!s.motionEffects.zoomOut;
-    if ($('fx-panLeft')) $('fx-panLeft').checked  = !!s.motionEffects.panLeft;
-    if ($('fx-panRight')) $('fx-panRight').checked = !!s.motionEffects.panRight;
+    $('fx-zoomIn').checked   = !!s.motionEffects.zoomIn;
+    $('fx-zoomOut').checked  = !!s.motionEffects.zoomOut;
+    $('fx-panLeft').checked  = !!s.motionEffects.panLeft;
+    $('fx-panRight').checked = !!s.motionEffects.panRight;
   }
   if (s.captionStyle) {
     const hasCard = Array.from($$('.template-card')).some(c => c.dataset.style === s.captionStyle);
@@ -853,17 +841,15 @@ function applySettings(s) {
   state.wordsPerLine = 'all';
   const folderEl = $('export-folder') || $('out-dir');
   if (s.saveFolder && folderEl) folderEl.value = s.saveFolder;
-  if ($('music-volume-val') && $('music-volume')) {
-    $('music-volume-val').textContent = `${Math.round(($('music-volume').value) * 100)}%`;
-  }
+  $('music-volume-val').textContent = `${Math.round(($('music-volume').value) * 100)}%`;
 }
 
 function toggleTransitionTypes(show) {
-  if ($('transition-types')) $('transition-types').classList.toggle('hidden', !show);
+  $('transition-types').classList.toggle('hidden', !show);
 }
-if ($('s-transitions')) $('s-transitions').onchange = (e) => toggleTransitionTypes(e.target.value === 'on');
+$('s-transitions').onchange = (e) => toggleTransitionTypes(e.target.value === 'on');
 
-if ($('btn-save-settings')) $('btn-save-settings').onclick = async () => {
+$('btn-save-settings').onclick = async () => {
   const s = {
     ...getSettings(),
     captionStyle: state.captionStyle,
@@ -874,14 +860,12 @@ if ($('btn-save-settings')) $('btn-save-settings').onclick = async () => {
     wordsPerLine: 'all',
   };
   await api('POST', '/api/settings', s);
-  if ($('settings-saved-msg')) {
-    $('settings-saved-msg').classList.remove('hidden');
-    setTimeout(() => $('settings-saved-msg').classList.add('hidden'), 3000);
-  }
+  $('settings-saved-msg').classList.remove('hidden');
+  setTimeout(() => $('settings-saved-msg').classList.add('hidden'), 3000);
 };
 
 // Rebuild timeline when gap mode changes
-if ($('s-gap-mode')) $('s-gap-mode').onchange = () => rebuildTimeline();
+$('s-gap-mode').onchange = () => rebuildTimeline();
 
 // ══════════════════════════════════════════════════════════════════════════
 // SECTION 3 — CAPTIONS
@@ -1361,11 +1345,6 @@ requestAnimationFrame(previewAnimationLoop);
 // ══════════════════════════════════════════════════════════════════════════
 
 async function rebuildTimeline() {
-  if ($('studio-images-count')) {
-    const count = state.files.filter(f => f.type === 'image').length;
-    $('studio-images-count').textContent = count > 0 ? `✓ ${count} image(s) attached` : '0 images attached';
-    $('studio-images-count').className = count > 0 ? 'text-teal-400 font-mono text-[11px] font-semibold' : 'text-slate-400 font-mono text-[11px]';
-  }
   if (!state.files.length) {
     state.clips = [];
     state.totalDuration = 0;
@@ -1375,7 +1354,7 @@ async function rebuildTimeline() {
   }
   const { clips, totalDuration } = await api('POST', '/api/parse-filenames', {
     files: state.files.map(f => ({ name: f.name, path: f.path, type: f.type })),
-    gapMode: $('s-gap-mode') ? $('s-gap-mode').value : 'extend',
+    gapMode: $('s-gap-mode').value,
   });
   state.clips = clips;
   state.totalDuration = totalDuration;
@@ -1907,15 +1886,7 @@ function estimatedBytes() {
 }
 
 const btnCreateVideo = $('btn-create-video') || $('btn-render');
-if (btnCreateVideo) {
-  btnCreateVideo.onclick = startExport;
-  const isWebDeployment = typeof window !== 'undefined' && window.location.hostname.includes('vercel.app');
-  if (isWebDeployment) {
-    const textSpan = btnCreateVideo.querySelector('span.tracking-wide') || btnCreateVideo;
-    if (textSpan) textSpan.textContent = '📦 Download 1-Click Render Package (.zip)';
-    btnCreateVideo.title = 'Download self-contained ZIP with media, scripts, and 1-click render.bat for full 2K/4K FFmpeg compile on PC';
-  }
-}
+if (btnCreateVideo) btnCreateVideo.onclick = startExport;
 
 const btnCancelExport = $('btn-cancel-export') || $('btn-cancel-render');
 if (btnCancelExport) btnCancelExport.onclick = cancelExport;
@@ -1932,179 +1903,6 @@ if ($('btn-new-export')) {
   };
 }
 
-let activeRenderObjectUrl = null;
-let browserExportAbortController = null;
-
-function resetRenderPlayer() {
-  const player = $('render-video-player');
-  if (player) {
-    try { player.pause(); } catch {}
-    player.removeAttribute('src');
-    player.load();
-  }
-  if (activeRenderObjectUrl) {
-    try { URL.revokeObjectURL(activeRenderObjectUrl); } catch {}
-    activeRenderObjectUrl = null;
-  }
-  if ($('render-player-wrap')) $('render-player-wrap').classList.add('hidden');
-  if ($('render-modal-card')) {
-    $('render-modal-card').classList.remove('max-w-2xl');
-    $('render-modal-card').classList.add('max-w-md');
-  }
-}
-
-function showPackageExportDone(pkg) {
-  if ($('export-progress')) $('export-progress').classList.add('hidden');
-  if ($('export-done')) $('export-done').classList.remove('hidden');
-  if ($('btn-create-video')) $('btn-create-video').classList.remove('hidden');
-  if ($('btn-render')) $('btn-render').classList.remove('hidden');
-  if ($('render-modal-dot')) {
-    $('render-modal-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
-  }
-  if ($('btn-close-modal')) {
-    $('btn-close-modal').classList.remove('hidden');
-    $('btn-close-modal').onclick = () => {
-      $('render-modal').classList.add('hidden');
-    };
-  }
-
-  const mb = (pkg.fileSize / 1_048_576).toFixed(1);
-  if ($('render-progress-bar')) $('render-progress-bar').style.width = '100%';
-  if ($('render-progress-val')) $('render-progress-val').textContent = '100%';
-  if ($('render-status-text')) $('render-status-text').textContent = '✓ 1-Click Render Package Downloaded!';
-  if ($('render-eta-text')) $('render-eta-text').textContent = `Package Size: ${mb} MB (${pkg.resolution})`;
-
-  const card = $('render-modal-card');
-  if (card) {
-    card.classList.remove('max-w-md');
-    card.classList.add('max-w-2xl');
-  }
-
-  const wrap = $('render-player-wrap');
-  if (wrap) {
-    wrap.classList.remove('hidden');
-    wrap.innerHTML = `
-      <div class="rounded-xl border border-emerald-500/40 bg-emerald-950/20 p-4 text-xs space-y-3 font-sans">
-        <div class="font-bold text-emerald-400 text-sm flex items-center gap-2">
-          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path></svg>
-          <span>Downloaded: ${pkg.fileName}</span>
-        </div>
-        <div class="text-slate-300 space-y-2 leading-relaxed">
-          <p class="font-semibold text-slate-200">How to compile your video in full quality on your PC:</p>
-          <ol class="list-decimal list-inside space-y-1.5 text-slate-300">
-            <li><strong>Extract</strong> the downloaded ZIP file into a folder on your computer.</li>
-            <li>Double-click <code class="text-emerald-300 bg-obsidian-950 px-1.5 py-0.5 rounded border border-emerald-500/30 font-mono font-bold">render.bat</code> (Windows) or run <code class="text-emerald-300 bg-obsidian-950 px-1.5 py-0.5 rounded border border-emerald-500/30 font-mono font-bold">./render.sh</code> (Mac/Linux).</li>
-            <li>FFmpeg will compile your video with <strong>full ${pkg.resolution} resolution, Ken Burns zoom/pan motion, transitions, voiceover audio, music, and kinetic subtitles</strong> in ~5 seconds!</li>
-          </ol>
-        </div>
-        <div class="pt-2 border-t border-emerald-500/20 text-[11px] text-slate-400">
-          💡 <em>Pro Tip: When running SceneFlow locally on your PC via <code class="text-slate-300">start.bat</code> (http://localhost:3000), "Create Video" renders directly with GPU NVENC in 1 click without downloading ZIPs!</em>
-        </div>
-      </div>
-    `;
-  }
-
-  if ($('render-complete-actions')) {
-    $('render-complete-actions').classList.remove('hidden');
-    $('render-complete-actions').innerHTML = `
-      <button id="btn-pkg-download-again" type="button" class="flex-1 py-2 bg-[#14B8A6] hover:bg-[#2DD4BF] text-[#0B0F14] font-bold text-xs rounded-lg transition">
-        📦 Download Package Again
-      </button>
-      <button id="btn-pkg-done-close" type="button" class="px-4 py-2 bg-obsidian-800 hover:bg-obsidian-750 text-slate-300 text-xs rounded-lg border border-obsidian-700 transition">
-        Close
-      </button>
-    `;
-    $('btn-pkg-download-again').onclick = () => triggerFileDownload(pkg.blob, pkg.fileName);
-    $('btn-pkg-done-close').onclick = () => $('render-modal').classList.add('hidden');
-  }
-}
-
-async function startRenderPackageExport() {
-  // If no image clips were explicitly attached, check if Timing has caption lines
-  if (!state.clips.length && state.captionLines && state.captionLines.length > 0) {
-    state.clips = state.captionLines.map((line, idx) => {
-      const dur = Math.max(0.1, (line.endSec - line.startSec) || 3.0);
-      return {
-        name: `scene_${String(idx + 1).padStart(3, '0')}.png`,
-        durationSec: dur,
-        startSec: line.startSec || 0,
-        endSec: line.endSec || ((line.startSec || 0) + dur),
-        type: 'image',
-        motion: 'auto'
-      };
-    });
-  }
-
-  if (!state.clips.length && !state.files.length && !state.voiceover) {
-    showExportError('Please attach your images or generate your voiceover & timing first.');
-    return;
-  }
-
-  const fileNameInput = $('out-filename') || $('export-filename');
-  const outFileName = ((fileNameInput ? fileNameInput.value.trim() : '') || 'sceneflow_project');
-  const resolution = $('s-resolution') ? $('s-resolution').value : '1080p';
-
-  resetRenderPlayer();
-
-  if ($('export-error')) $('export-error').classList.add('hidden');
-  if ($('export-done')) $('export-done').classList.add('hidden');
-  if ($('export-progress')) $('export-progress').classList.remove('hidden');
-  if ($('render-modal')) $('render-modal').classList.remove('hidden');
-  if ($('btn-create-video')) $('btn-create-video').classList.add('hidden');
-  if ($('btn-render')) $('btn-render').classList.add('hidden');
-  if ($('btn-cancel-export')) $('btn-cancel-export').classList.add('hidden');
-  if ($('btn-cancel-render')) $('btn-cancel-render').classList.add('hidden');
-  if ($('render-complete-actions')) $('render-complete-actions').classList.add('hidden');
-  if ($('btn-close-modal')) $('btn-close-modal').classList.add('hidden');
-  if ($('render-modal-dot')) {
-    $('render-modal-dot').className = 'w-2.5 h-2.5 rounded-full bg-teal-400 animate-pulse';
-  }
-
-  const hwEl = $('render-modal')?.querySelector('.text-\\[11px\\].font-mono.text-slate-500 span:first-child');
-  if (hwEl) hwEl.textContent = 'Package: 1-Click Offline FFmpeg Engine';
-
-  if ($('progress-bar')) $('progress-bar').style.width = '0%';
-  if ($('progress-pct')) $('progress-pct').textContent = '0%';
-  if ($('progress-stage')) $('progress-stage').textContent = 'Packaging media assets…';
-  if ($('render-progress-bar')) $('render-progress-bar').style.width = '0%';
-  if ($('render-progress-val')) $('render-progress-val').textContent = '0%';
-  if ($('render-status-text')) $('render-status-text').textContent = 'Generating 1-Click Render Package…';
-  if ($('render-eta-text')) $('render-eta-text').textContent = 'Assembling assets…';
-
-  try {
-    const pkg = await buildRenderPackage({
-      clips: state.clips,
-      files: state.files,
-      voiceover: state.voiceover,
-      music: state.music,
-      musicVolume: $('music-volume') ? parseFloat($('music-volume').value) : 0.15,
-      captionLines: state.captionLines,
-      captionFont: state.captionFont,
-      captionColor: state.captionColor,
-      captionHighlight: state.captionHighlight,
-      captionSize: state.captionSize,
-      captionPosition: state.captionPosition,
-      resolution,
-      fps: 30,
-      outFileName,
-      onProgress: ({ pct, stage }) => {
-        if ($('progress-bar')) $('progress-bar').style.width = `${pct}%`;
-        if ($('progress-pct')) $('progress-pct').textContent = `${pct}%`;
-        if ($('progress-stage')) $('progress-stage').textContent = stage;
-        if ($('render-progress-bar')) $('render-progress-bar').style.width = `${pct}%`;
-        if ($('render-progress-val')) $('render-progress-val').textContent = `${pct}%`;
-        if ($('render-status-text')) $('render-status-text').textContent = stage;
-      }
-    });
-
-    triggerFileDownload(pkg.blob, pkg.fileName);
-    showPackageExportDone(pkg);
-
-  } catch (err) {
-    showExportError(`Package error: ${err.message}`);
-  }
-}
-
 async function startExport() {
   if (!state.clips.length) {
     showExportError('No clips in timeline. Add images or videos first.');
@@ -2113,7 +1911,8 @@ async function startExport() {
 
   const isWebDeployment = typeof window !== 'undefined' && window.location.hostname.includes('vercel.app');
   if (isWebDeployment) {
-    return startRenderPackageExport();
+    showExportError('Cloud Note: Vercel serverless hosting has a 10s execution limit and cannot encode full videos with desktop FFmpeg. To render your finished video, run SceneFlow on your local PC via start.bat (http://localhost:3000). All Voiceover, Timing, Prompts, and Studio timeline preview features run live here.');
+    return;
   }
 
   if (isUploadingMedia) {
@@ -2156,6 +1955,24 @@ async function startExport() {
     await checkDiskSpace(saveFolder);
   }
 
+  let activeRenderObjectUrl = null;
+  function resetRenderPlayer() {
+    const player = $('render-video-player');
+    if (player) {
+      try { player.pause(); } catch {}
+      player.removeAttribute('src');
+      player.load();
+    }
+    if (activeRenderObjectUrl) {
+      try { URL.revokeObjectURL(activeRenderObjectUrl); } catch {}
+      activeRenderObjectUrl = null;
+    }
+    if ($('render-player-wrap')) $('render-player-wrap').classList.add('hidden');
+    if ($('render-modal-card')) {
+      $('render-modal-card').classList.remove('max-w-2xl');
+      $('render-modal-card').classList.add('max-w-md');
+    }
+  }
   resetRenderPlayer();
 
   if ($('export-error')) $('export-error').classList.add('hidden');
@@ -2264,14 +2081,9 @@ async function startExport() {
 }
 
 async function cancelExport() {
-  if (browserExportAbortController) {
-    browserExportAbortController.abort();
-    browserExportAbortController = null;
-  }
-  if (state.activeJobId) {
-    await api('POST', `/api/export/${state.activeJobId}/cancel`, {}).catch(() => {});
-    state.activeJobId = null;
-  }
+  if (!state.activeJobId) return;
+  await api('POST', `/api/export/${state.activeJobId}/cancel`, {});
+  state.activeJobId = null;
   if ($('export-progress')) $('export-progress').classList.add('hidden');
   if ($('render-modal')) $('render-modal').classList.add('hidden');
   if ($('btn-create-video')) $('btn-create-video').classList.remove('hidden');
@@ -2312,7 +2124,7 @@ function showExportDone(data, resetPlayerCb, trackUrlCb) {
   if ($('render-status-text')) {
     $('render-status-text').textContent = data.savedBrowserFolder
       ? `Saved to "${data.savedBrowserFolder}/${data.savedFileName || ''}"!`
-      : (data.blob ? '✓ Video compiled & downloaded!' : 'Render completed successfully!');
+      : 'Render completed successfully!';
   }
   if ($('render-eta-text')) $('render-eta-text').textContent = `Done in ${elapsed}s (${mb} MB)`;
   if ($('render-complete-actions')) $('render-complete-actions').classList.remove('hidden');
@@ -2324,22 +2136,6 @@ function showExportDone(data, resetPlayerCb, trackUrlCb) {
     };
   }
 
-  // If in-browser video URL is provided, display player immediately
-  if (data.url) {
-    const player = $('render-video-player');
-    const wrap = $('render-player-wrap');
-    const card = $('render-modal-card');
-    if (player && wrap) {
-      if (card) {
-        card.classList.remove('max-w-md');
-        card.classList.add('max-w-2xl');
-      }
-      wrap.classList.remove('hidden');
-      player.src = data.url;
-      player.play().catch(() => {});
-    }
-  }
-
   const outDirInput = $('out-dir') || $('export-folder');
   if ($('btn-open-export')) {
     $('btn-open-export').onclick = async () => {
@@ -2349,9 +2145,7 @@ function showExportDone(data, resetPlayerCb, trackUrlCb) {
       if (!player || !wrap) return;
       try {
         let srcUrl = '';
-        if (data.url) {
-          srcUrl = data.url;
-        } else if (data.savedFileHandle && typeof data.savedFileHandle.getFile === 'function') {
+        if (data.savedFileHandle && typeof data.savedFileHandle.getFile === 'function') {
           const file = await data.savedFileHandle.getFile();
           srcUrl = URL.createObjectURL(file);
           if (trackUrlCb) trackUrlCb(srcUrl);
@@ -2372,29 +2166,21 @@ function showExportDone(data, resetPlayerCb, trackUrlCb) {
     };
   }
   if ($('btn-open-folder')) {
-    if (data.blob) {
-      $('btn-open-folder').textContent = 'Download Video';
-      $('btn-open-folder').onclick = () => {
-        triggerFileDownload(data.blob, data.fileName || 'export.mp4');
-      };
-    } else {
-      $('btn-open-folder').textContent = 'Open Folder';
-      $('btn-open-folder').onclick = async () => {
-        const p = data.outputPath || (outDirInput ? outDirInput.value : '');
-        if (p) {
-          try {
-            await api('POST', '/api/open-folder', { folderPath: p });
-          } catch (err) {
-            console.warn('Could not open folder via API:', err);
-          }
+    $('btn-open-folder').onclick = async () => {
+      const p = data.outputPath || (outDirInput ? outDirInput.value : '');
+      if (p) {
+        try {
+          await api('POST', '/api/open-folder', { folderPath: p });
+        } catch (err) {
+          console.warn('Could not open folder via API:', err);
         }
-      };
-    }
+      }
+    };
   }
 
-  // Automatically open video location in Windows Explorer (local machine only)
+  // Automatically open video location in Windows Explorer
   const targetPath = data.outputPath || (outDirInput ? outDirInput.value : '');
-  if (!data.savedBrowserFolder && !data.blob && targetPath) {
+  if (!data.savedBrowserFolder && targetPath) {
     api('POST', '/api/open-folder', { folderPath: targetPath }).catch(() => {});
   }
 
@@ -2481,12 +2267,10 @@ async function loadHistory() {
   }
 }
 
-if ($('btn-clear-history')) {
-  $('btn-clear-history').onclick = async () => {
-    await api('DELETE', '/api/history');
-    loadHistory();
-  };
-}
+$('btn-clear-history').onclick = async () => {
+  await api('DELETE', '/api/history');
+  loadHistory();
+};
 
 window.openFolder = (path) => api('POST', '/api/open-folder', { folderPath: path });
 

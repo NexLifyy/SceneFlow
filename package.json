@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test test/parser.test.js test/timing.test.js test/prompts.test.js test/prompts_storage.test.js test/voice.test.js test/images.test.js test/studio.test.js test/sceneflow_routes.test.js test/browser_renderer.test.js test/package_exporter.test.js",
+    "test": "node --test test/parser.test.js test/timing.test.js test/prompts.test.js test/prompts_storage.test.js test/voice.test.js test/images.test.js test/studio.test.js test/sceneflow_routes.test.js",
     "download-models": "node bin/download-models.js"
   },
   "dependencies": {
