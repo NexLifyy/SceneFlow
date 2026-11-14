@@ -70,23 +70,54 @@ export async function isAacAudioSupported() {
 
 /**
  * Load an image from a File, Blob, or URL into an HTMLImageElement or ImageBitmap.
+ * Zero-CORS safe: uses createImageBitmap for local files and avoids tainted canvas.
  */
 async function loadMediaImage(fileItem) {
   if (!fileItem) return null;
-  return new Promise((resolve) => {
-    let src = '';
-    if (fileItem.file) {
-      src = URL.createObjectURL(fileItem.file);
-    } else if (fileItem.objectUrl) {
-      src = fileItem.objectUrl;
-    } else if (fileItem.path && !fileItem.path.startsWith('client:')) {
-      src = `/api/media-preview?path=${encodeURIComponent(fileItem.path)}`;
+
+  // 1. If we have a local File or Blob, decode directly into an ImageBitmap (fastest, zero-CORS)
+  if (fileItem.file && typeof createImageBitmap === 'function') {
+    try {
+      return await createImageBitmap(fileItem.file);
+    } catch (e) {
+      console.warn('createImageBitmap failed for', fileItem.name, e);
     }
+  }
 
-    if (!src) return resolve(null);
+  // 2. Resolve image source URL
+  let src = '';
+  let isBlobOrData = false;
 
+  if (fileItem.file) {
+    src = URL.createObjectURL(fileItem.file);
+    isBlobOrData = true;
+  } else if (fileItem.objectUrl) {
+    src = fileItem.objectUrl;
+    isBlobOrData = src.startsWith('blob:') || src.startsWith('data:');
+  } else if (fileItem.path && !fileItem.path.startsWith('client:')) {
+    src = `/api/media-preview?path=${encodeURIComponent(fileItem.path)}`;
+    isBlobOrData = false;
+  }
+
+  if (!src) return null;
+
+  // 3. If source is blob:, try createImageBitmap from fetched blob
+  if (isBlobOrData && typeof createImageBitmap === 'function') {
+    try {
+      const resp = await fetch(src);
+      if (resp.ok) {
+        const b = await resp.blob();
+        return await createImageBitmap(b);
+      }
+    } catch {}
+  }
+
+  // 4. Standard HTMLImageElement fallback (never set crossOrigin on blob: or data: URLs)
+  return new Promise((resolve) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    if (!isBlobOrData) {
+      img.crossOrigin = 'anonymous';
+    }
     img.onload = () => resolve(img);
     img.onerror = () => {
       console.warn('Could not load image for browser render:', fileItem.name);
@@ -350,7 +381,16 @@ export async function compileVideoInBrowser({
   for (let i = 0; i < clips.length; i++) {
     const c = clips[i];
     if (imageMap.has(c.name)) continue;
-    const fileItem = files.find(f => f.name === c.name) || c;
+    let fileItem = files.find(f => f.name === c.name);
+    if (!fileItem) {
+      const cNorm = (c.name || '').toLowerCase().trim();
+      fileItem = files.find(f => f.name && f.name.toLowerCase().trim() === cNorm);
+    }
+    if (!fileItem && files[i] && clips.length === files.length) {
+      fileItem = files[i];
+    }
+    if (!fileItem) fileItem = c;
+
     const img = await loadMediaImage(fileItem);
     if (img) imageMap.set(c.name, img);
   }
@@ -384,12 +424,19 @@ export async function compileVideoInBrowser({
 
   let videoError = null;
   let cachedVideoMeta = null;
+  let chunksEncoded = 0;
   const videoEncoder = new VideoEncoder({
     output: (chunk, meta) => {
+      chunksEncoded++;
       if (meta && meta.decoderConfig) {
         cachedVideoMeta = meta;
       }
-      muxer.addVideoChunk(chunk, meta || cachedVideoMeta);
+      try {
+        muxer.addVideoChunk(chunk, meta || cachedVideoMeta);
+      } catch (err) {
+        console.error('Muxer chunk error:', err);
+        videoError = err;
+      }
     },
     error: (e) => {
       console.error('VideoEncoder error:', e);
@@ -510,6 +557,11 @@ export async function compileVideoInBrowser({
     videoEncoder.encode(videoFrame, { keyFrame });
     videoFrame.close();
 
+    // Backpressure: prevent browser GPU buffer exhaustion on multi-clip projects
+    while (videoEncoder.encodeQueueSize > 6) {
+      await new Promise(r => setTimeout(r, 6));
+    }
+
     // Update progress & calculate ETA
     if (f % 5 === 0 || f === totalFrames - 1) {
       const pct = 15 + Math.round((f / totalFrames) * 80);
@@ -528,9 +580,17 @@ export async function compileVideoInBrowser({
 
   onProgress({ pct: 96, stage: 'Finalizing MP4 file container…' });
   await videoEncoder.flush();
+  if (videoError) throw videoError;
+  if (chunksEncoded === 0) {
+    throw new Error('Video encoder failed to produce frames. Please check your browser hardware acceleration or try 720p.');
+  }
+
   muxer.finalize();
 
   const { buffer } = muxer.target;
+  if (!buffer || buffer.byteLength <= 600) {
+    throw new Error('Export produced an empty video container. Please ensure timeline has valid image media.');
+  }
   const blob = new Blob([buffer], { type: 'video/mp4' });
   const blobUrl = URL.createObjectURL(blob);
 
