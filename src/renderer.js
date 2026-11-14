@@ -238,8 +238,8 @@ async function render(job, onProgress, jobId) {
 
   progress('Preparing', 2, 'Analyzing clips...');
 
-  // ── Step 2: Render clips in batches of 50 ───────────────────────────────
-  const BATCH_SIZE = 50;
+  // ── Step 2: Render clips in batches of 10 ───────────────────────────────
+  const BATCH_SIZE = 10;
   const batches = [];
   for (let i = 0; i < clips.length; i += BATCH_SIZE) {
     batches.push(clips.slice(i, i + BATCH_SIZE));
@@ -284,7 +284,7 @@ async function render(job, onProgress, jobId) {
       let f;
       if (motion !== 'none' && clip.type !== 'gap') {
         const zoompanFilter = buildZoompan(motion, dur, w, h, motionSpeed, fps);
-        const scaleFirst = buildScaleFilter(w * 4, h * 4, fitMode); // 4x super-resolution pre-scale completely eliminates integer rounding jitter
+        const scaleFirst = buildScaleFilter(w, h, fitMode);
         f = `[${i}:v]${scaleFirst},${zoompanFilter},setpts=PTS-STARTPTS,fps=${fps},trim=duration=${dur}[v${i}]`;
       } else if (clip.type === 'gap') {
         f = `[${i}:v]scale=${w}:${h},fps=${fps},trim=duration=${dur}[v${i}]`;
@@ -358,13 +358,23 @@ async function render(job, onProgress, jobId) {
     audioInputCount++;
   }
 
-  // Build audio filter
+  const hasSubtitles = assFile && fs.existsSync(assFile);
+  const filterParts = [];
+  let videoMap = '0:v';
   let audioMap = null;
+
+  if (hasSubtitles) {
+    const assPathEscaped = assFile.replace(/\\/g, '/').replace(/:/g, '\\:');
+    const fontsDir = path.join(__dirname, '..', 'fonts');
+    const fontsDirEscaped = fontsDir.replace(/\\/g, '/').replace(/:/g, '\\:');
+    filterParts.push(`[0:v]subtitles='${assPathEscaped}':fontsdir='${fontsDirEscaped}'[vout]`);
+    videoMap = '[vout]';
+  }
+
   if (audioInputCount === 2) {
-    // Mix voiceover + music with volume
     const voiceover_idx = 1;
     const music_idx = 2;
-    finalArgs.push('-filter_complex',
+    filterParts.push(
       `[${voiceover_idx}:a]apad[vo];[${music_idx}:a]volume=${musicVolume}[music];[vo][music]amix=inputs=2:duration=first[aout]`
     );
     audioMap = '[aout]';
@@ -372,19 +382,27 @@ async function render(job, onProgress, jobId) {
     audioMap = '1:a';
   }
 
+  if (filterParts.length > 0) {
+    finalArgs.push('-filter_complex', filterParts.join(';'));
+  }
+
   // Map video + audio
-  finalArgs.push('-map', '0:v');
+  finalArgs.push('-map', videoMap);
   if (audioMap) finalArgs.push('-map', audioMap);
 
-  // Video codec
-  finalArgs.push('-c:v', encoder);
-  if (encoder === 'libx264') {
-    finalArgs.push('-crf', String(crf), '-preset', 'fast');
+  if (hasSubtitles) {
+    finalArgs.push('-c:v', encoder);
+    if (encoder === 'libx264') {
+      finalArgs.push('-crf', String(crf), '-preset', 'fast');
+    } else {
+      finalArgs.push('-b:v', bitrate);
+    }
+    finalArgs.push('-pix_fmt', 'yuv420p');
+    finalArgs.push('-r', String(fps));
   } else {
-    finalArgs.push('-b:v', bitrate);
+    // Fast stream copy without re-encoding video
+    finalArgs.push('-c:v', 'copy');
   }
-  finalArgs.push('-pix_fmt', 'yuv420p');
-  finalArgs.push('-r', String(fps));
 
   // Audio codec
   if (audioInputCount > 0) {
@@ -394,47 +412,14 @@ async function render(job, onProgress, jobId) {
     }
   }
 
-  // Captions filter (burn subtitles)
-  // Note: subtitles filter must be applied to video stream;
-  // we do it in a separate pass after audio mix for simplicity
   finalArgs.push('-movflags', '+faststart');
   finalArgs.push(outputPath);
 
   await runFfmpeg(finalArgs, totalDuration, (pct) => {
-    progress('Finalizing', 80 + Math.round(pct * 0.15), 'Muxing...');
+    progress('Finalizing', 80 + Math.round(pct * 0.18), hasSubtitles ? 'Burning captions & muxing audio...' : 'Muxing audio...');
   }, jobId);
 
-  // ── Step 4b: Burn captions if needed ─────────────────────────────────────
   let finalOutput = outputPath;
-  if (assFile && fs.existsSync(assFile)) {
-    progress('Captions', 95, 'Burning subtitles...');
-    const captionedPath = outputPath.replace('.mp4', '_captioned.mp4');
-
-    // ASS paths need forward slashes and escaped colons on Windows
-    const assPathEscaped = assFile.replace(/\\/g, '/').replace(/:/g, '\\:');
-    const fontsDir = path.join(__dirname, '..', 'fonts');
-    const fontsDirEscaped = fontsDir.replace(/\\/g, '/').replace(/:/g, '\\:');
-
-    const capArgs = [
-      '-y', '-i', outputPath,
-      '-vf', `subtitles='${assPathEscaped}':fontsdir='${fontsDirEscaped}'`,
-      '-c:v', encoder,
-    ];
-    if (encoder === 'libx264') {
-      capArgs.push('-crf', String(crf), '-preset', 'fast');
-    } else {
-      capArgs.push('-b:v', bitrate);
-    }
-    capArgs.push('-pix_fmt', 'yuv420p', '-c:a', 'copy', '-movflags', '+faststart');
-    capArgs.push(captionedPath);
-
-    await runFfmpeg(capArgs, totalDuration, null, jobId);
-
-    // Replace original with captioned
-    fs.unlinkSync(outputPath);
-    fs.renameSync(captionedPath, outputPath);
-    finalOutput = outputPath;
-  }
 
   progress('Done', 100, 'Complete');
 
