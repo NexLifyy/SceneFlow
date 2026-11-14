@@ -518,21 +518,20 @@ function renderMediaGrid() {
   const grid = $('media-grid');
   if (!grid) return;
   const viewport = $('media-viewport');
-  const grid = $('media-grid');
   const sliderWrap = $('media-slider-wrap');
   const slider = $('media-slider');
   const sliderCount = $('media-slider-count');
-  const hintWrap = dropZone.querySelector('.drop-hint-wrap');
+  const hintWrap = dropZone ? dropZone.querySelector('.drop-hint-wrap') : null;
   grid.innerHTML = '';
   grid.scrollLeft = 0;
 
   if (state.files.length === 0) {
-    hintWrap.style.display = 'flex';
+    if (hintWrap) hintWrap.style.display = 'flex';
     if (viewport) viewport.classList.add('hidden');
     if (sliderWrap) sliderWrap.classList.add('hidden');
     return;
   }
-  hintWrap.style.display = 'none';
+  if (hintWrap) hintWrap.style.display = 'none';
   if (viewport) viewport.classList.remove('hidden');
 
   for (const f of state.files) {
