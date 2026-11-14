@@ -14,6 +14,7 @@ const http = require('node:http');
 
 const { extractZipMedia } = require('../src/zip_extractor');
 const { generateASS, chunkWords } = require('../src/captions');
+const settingsStore = require('../src/settings');
 const app = require('../server');
 
 /**
@@ -258,6 +259,7 @@ test('Studio Section 03 HTML & captions.js support full line default, No Caption
 });
 
 test('Settings & export download endpoints handle C:\\ default and missing job cleanly', async () => {
+  settingsStore.save({ saveFolder: 'C:\\' });
   const srv = app.listen(0);
   const { port } = srv.address();
   const baseUrl = `http://127.0.0.1:${port}`;

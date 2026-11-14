@@ -45,19 +45,16 @@ for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":3000" ^| findstr "LISTENING
     taskkill /F /PID %%a >nul 2>nul
 )
 
-:: 4. Launch browser and start server
-echo [3/3] Launching SceneFlow Studio...
+:: 4. Start server (opens default browser automatically when ready)
+echo [3/3] Starting SceneFlow Studio server...
 echo.
 echo ========================================================
 echo   SceneFlow Studio is LIVE at http://localhost:3000
+echo   Opening default browser with link...
 echo   Keep this command window open while using SceneFlow.
 echo   To stop the server, press Ctrl+C or close this window.
 echo ========================================================
 echo.
 
-:: Launch browser in background
-start "" http://localhost:3000
-
-:: Start server
 node server.js
 pause

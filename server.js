@@ -617,7 +617,20 @@ app.get('*', (req, res) => {
 const PORT = process.env.PORT || 3000;
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`\n🎬  SceneFlow running at http://localhost:${PORT}\n`);
+    const url = `http://localhost:${PORT}`;
+    console.log(`\n🎬  SceneFlow running at ${url}\n`);
+
+    // Automatically open default browser when starting locally
+    if (!process.env.NO_OPEN && !process.env.VERCEL && process.env.NODE_ENV !== 'test') {
+      const openCmd = process.platform === 'win32'
+        ? `start "" "${url}"`
+        : process.platform === 'darwin'
+        ? `open "${url}"`
+        : `xdg-open "${url}"`;
+      exec(openCmd, (err) => {
+        if (err) console.warn('Could not launch browser automatically:', err.message);
+      });
+    }
   });
 }
 
