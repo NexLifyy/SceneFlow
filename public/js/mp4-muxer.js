@@ -1260,11 +1260,14 @@ var Muxer = class {
     }
     let data = new Uint8Array(sample.byteLength);
     sample.copyTo(data);
+    const validDuration = (sample.duration !== null && sample.duration !== undefined && Number.isFinite(sample.duration) && sample.duration >= 0)
+      ? sample.duration
+      : 0;
     this.addVideoChunkRaw(
       data,
       sample.type,
       timestamp ?? sample.timestamp,
-      sample.duration,
+      validDuration,
       meta,
       compositionTimeOffset
     );
@@ -1279,8 +1282,8 @@ var Muxer = class {
     if (!Number.isFinite(timestamp) || timestamp < 0) {
       throw new TypeError("addVideoChunkRaw's third argument (timestamp) must be a non-negative real number.");
     }
-    if (!Number.isFinite(duration) || duration < 0) {
-      throw new TypeError("addVideoChunkRaw's fourth argument (duration) must be a non-negative real number.");
+    if (duration === null || duration === undefined || !Number.isFinite(duration) || duration < 0) {
+      duration = 0;
     }
     if (meta && typeof meta !== "object") {
       throw new TypeError("addVideoChunkRaw's fifth argument (meta), when provided, must be an object.");
@@ -1325,7 +1328,10 @@ var Muxer = class {
     }
     let data = new Uint8Array(sample.byteLength);
     sample.copyTo(data);
-    this.addAudioChunkRaw(data, sample.type, timestamp ?? sample.timestamp, sample.duration, meta);
+    const validDuration = (sample.duration !== null && sample.duration !== undefined && Number.isFinite(sample.duration) && sample.duration >= 0)
+      ? sample.duration
+      : 0;
+    this.addAudioChunkRaw(data, sample.type, timestamp ?? sample.timestamp, validDuration, meta);
   }
   addAudioChunkRaw(data, type, timestamp, duration, meta) {
     if (!(data instanceof Uint8Array)) {
@@ -1337,8 +1343,8 @@ var Muxer = class {
     if (!Number.isFinite(timestamp) || timestamp < 0) {
       throw new TypeError("addAudioChunkRaw's third argument (timestamp) must be a non-negative real number.");
     }
-    if (!Number.isFinite(duration) || duration < 0) {
-      throw new TypeError("addAudioChunkRaw's fourth argument (duration) must be a non-negative real number.");
+    if (duration === null || duration === undefined || !Number.isFinite(duration) || duration < 0) {
+      duration = 0;
     }
     if (meta && typeof meta !== "object") {
       throw new TypeError("addAudioChunkRaw's fifth argument (meta), when provided, must be an object.");

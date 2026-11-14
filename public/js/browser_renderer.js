@@ -422,6 +422,7 @@ export async function compileVideoInBrowser({
     firstTimestampBehavior: 'offset',
   });
 
+  const frameDurationUs = Math.round(1_000_000 / fps);
   let videoError = null;
   let cachedVideoMeta = null;
   let chunksEncoded = 0;
@@ -432,7 +433,13 @@ export async function compileVideoInBrowser({
         cachedVideoMeta = meta;
       }
       try {
-        muxer.addVideoChunk(chunk, meta || cachedVideoMeta);
+        const safeMeta = meta || cachedVideoMeta;
+        const safeDuration = (chunk.duration !== null && chunk.duration !== undefined && Number.isFinite(chunk.duration) && chunk.duration >= 0)
+          ? chunk.duration
+          : frameDurationUs;
+        const chunkData = new Uint8Array(chunk.byteLength);
+        chunk.copyTo(chunkData);
+        muxer.addVideoChunkRaw(chunkData, chunk.type, chunk.timestamp, safeDuration, safeMeta);
       } catch (err) {
         console.error('Muxer chunk error:', err);
         videoError = err;
@@ -553,7 +560,7 @@ export async function compileVideoInBrowser({
     // Create VideoFrame & encode
     const timestampUs = Math.round(t * 1_000_000);
     const keyFrame = f % (fps * 2) === 0; // Keyframe every 2 seconds
-    const videoFrame = new VideoFrame(canvas, { timestamp: timestampUs });
+    const videoFrame = new VideoFrame(canvas, { timestamp: timestampUs, duration: frameDurationUs });
     videoEncoder.encode(videoFrame, { keyFrame });
     videoFrame.close();
 
