@@ -98,7 +98,7 @@ function setPreviewFrame(clipOrFile) {
 // SECTION 1 — MEDIA
 // ══════════════════════════════════════════════════════════════════════════
 
-$('btn-add-folder').onclick = async () => {
+if ($('btn-add-folder')) $('btn-add-folder').onclick = async () => {
   const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
   if (isLocalhost) {
     try {
@@ -150,8 +150,8 @@ $('btn-add-folder').onclick = async () => {
   // Fallback to browser folder input
   $('input-folder').click();
 };
-$('btn-add-files').onclick  = () => $('input-files').click();
-$('btn-clear').onclick      = clearMedia;
+if ($('btn-add-files') && $('input-files')) $('btn-add-files').onclick = () => $('input-files').click();
+if ($('btn-clear')) $('btn-clear').onclick = clearMedia;
 
 if ($('btn-add-zip') && $('input-zip')) {
   $('btn-add-zip').onclick = () => $('input-zip').click();
@@ -238,26 +238,28 @@ if ($('btn-confirm-scan-modal')) {
   };
 }
 
-$('input-folder').onchange = (e) => { addFiles(e.target.files); e.target.value = ''; };
-$('input-files').onchange  = (e) => { addFiles(e.target.files); e.target.value = ''; };
+if ($('input-folder')) $('input-folder').onchange = (e) => { addFiles(e.target.files); e.target.value = ''; };
+if ($('input-files')) $('input-files').onchange  = (e) => { addFiles(e.target.files); e.target.value = ''; };
 
 // Drop zone
 const dropZone = $('drop-zone');
-dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', (e) => {
-  e.preventDefault();
-  dropZone.classList.remove('drag-over');
-  if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
-});
-dropZone.addEventListener('click', (e) => {
-  if (!state.files.length && !e.target.closest('#media-viewport')) {
-    $('input-files').click();
-  }
-});
-dropZone.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' || e.key === ' ') $('input-files').click();
-});
+if (dropZone) {
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+  });
+  dropZone.addEventListener('click', (e) => {
+    if (!state.files.length && !e.target.closest('#media-viewport')) {
+      if ($('input-files')) $('input-files').click();
+    }
+  });
+  dropZone.addEventListener('keydown', (e) => {
+    if ((e.key === 'Enter' || e.key === ' ') && $('input-files')) $('input-files').click();
+  });
+}
 
 let isUploadingMedia = false;
 
@@ -508,6 +510,13 @@ function clearMedia() {
 }
 
 function renderMediaGrid() {
+  if ($('studio-images-count')) {
+    const count = state.files.filter(f => f.type === 'image').length;
+    $('studio-images-count').textContent = count > 0 ? `✓ ${count} image(s) attached` : '0 images attached';
+    $('studio-images-count').className = count > 0 ? 'text-teal-400 font-mono text-[11px] font-semibold' : 'text-slate-400 font-mono text-[11px]';
+  }
+  const grid = $('media-grid');
+  if (!grid) return;
   const viewport = $('media-viewport');
   const grid = $('media-grid');
   const sliderWrap = $('media-slider-wrap');
@@ -616,8 +625,8 @@ function renderMediaGrid() {
 }
 
 // ── Voiceover ─────────────────────────────────────────────────────────────
-$('btn-add-voiceover').onclick = () => $('input-voiceover').click();
-$('input-voiceover').onchange = async (e) => {
+if ($('btn-add-voiceover') && $('input-voiceover')) $('btn-add-voiceover').onclick = () => $('input-voiceover').click();
+if ($('input-voiceover')) $('input-voiceover').onchange = async (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
@@ -678,7 +687,7 @@ $('input-voiceover').onchange = async (e) => {
     }
   }
 };
-$('btn-remove-voiceover').onclick = () => {
+if ($('btn-remove-voiceover')) $('btn-remove-voiceover').onclick = () => {
   state.voiceover = null;
   $('voiceover-name').textContent = 'No voiceover added';
   $('btn-remove-voiceover').classList.add('hidden');
@@ -692,8 +701,8 @@ $('btn-remove-voiceover').onclick = () => {
 };
 
 // ── Background Music ──────────────────────────────────────────────────────
-$('btn-add-music').onclick = () => $('input-music').click();
-$('input-music').onchange = async (e) => {
+if ($('btn-add-music') && $('input-music')) $('btn-add-music').onclick = () => $('input-music').click();
+if ($('input-music')) $('input-music').onchange = async (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
@@ -751,7 +760,7 @@ $('input-music').onchange = async (e) => {
     }
   }
 };
-$('btn-remove-music').onclick = () => {
+if ($('btn-remove-music')) $('btn-remove-music').onclick = () => {
   state.music = null;
   $('music-name').textContent = 'No music added';
   $('btn-remove-music').classList.add('hidden');
@@ -849,9 +858,9 @@ function applySettings(s) {
 function toggleTransitionTypes(show) {
   $('transition-types').classList.toggle('hidden', !show);
 }
-$('s-transitions').onchange = (e) => toggleTransitionTypes(e.target.value === 'on');
+if ($('s-transitions')) $('s-transitions').onchange = (e) => toggleTransitionTypes(e.target.value === 'on');
 
-$('btn-save-settings').onclick = async () => {
+if ($('btn-save-settings')) $('btn-save-settings').onclick = async () => {
   const s = {
     ...getSettings(),
     captionStyle: state.captionStyle,
@@ -867,7 +876,7 @@ $('btn-save-settings').onclick = async () => {
 };
 
 // Rebuild timeline when gap mode changes
-$('s-gap-mode').onchange = () => rebuildTimeline();
+if ($('s-gap-mode')) $('s-gap-mode').onchange = () => rebuildTimeline();
 
 // ══════════════════════════════════════════════════════════════════════════
 // SECTION 3 — CAPTIONS
@@ -1347,6 +1356,11 @@ requestAnimationFrame(previewAnimationLoop);
 // ══════════════════════════════════════════════════════════════════════════
 
 async function rebuildTimeline() {
+  if ($('studio-images-count')) {
+    const count = state.files.filter(f => f.type === 'image').length;
+    $('studio-images-count').textContent = count > 0 ? `✓ ${count} image(s) attached` : '0 images attached';
+    $('studio-images-count').className = count > 0 ? 'text-teal-400 font-mono text-[11px] font-semibold' : 'text-slate-400 font-mono text-[11px]';
+  }
   if (!state.files.length) {
     state.clips = [];
     state.totalDuration = 0;
@@ -2001,8 +2015,23 @@ function showPackageExportDone(pkg) {
 }
 
 async function startRenderPackageExport() {
-  if (!state.clips.length) {
-    showExportError('No clips in timeline. Add images or videos first.');
+  // If no image clips were explicitly attached, check if Timing has caption lines
+  if (!state.clips.length && state.captionLines && state.captionLines.length > 0) {
+    state.clips = state.captionLines.map((line, idx) => {
+      const dur = Math.max(0.1, (line.endSec - line.startSec) || 3.0);
+      return {
+        name: `scene_${String(idx + 1).padStart(3, '0')}.png`,
+        durationSec: dur,
+        startSec: line.startSec || 0,
+        endSec: line.endSec || ((line.startSec || 0) + dur),
+        type: 'image',
+        motion: 'auto'
+      };
+    });
+  }
+
+  if (!state.clips.length && !state.files.length && !state.voiceover) {
+    showExportError('Please attach your images or generate your voiceover & timing first.');
     return;
   }
 

@@ -135,76 +135,37 @@ test('POST /api/upload-zip extracts uploaded zip archive media entries cleanly',
   }
 });
 
-test('Studio Section 01 HTML & CSS reflect Add Zip, Reset, 8-image fixed-height grid + slider, and clean audio labels', () => {
+test('Studio page HTML renders clean streamlined 1-Click Render Package workstation card matching Images page layout', () => {
   const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
-  const css = fs.readFileSync(path.join(__dirname, '..', 'public', 'css', 'style.css'), 'utf8');
   const start = html.indexOf('<div id="page-studio"');
-  const end = html.indexOf('<!-- SECTION 2', start);
-  assert.ok(start > 0 && end > start, 'Expected #page-studio Section 01 bounds');
-  const sec1 = html.slice(start, end);
+  const end = html.indexOf('<!-- /#page-studio -->', start);
+  assert.ok(start > 0 && end > start, 'Expected #page-studio bounds');
+  const studioHtml = html.slice(start, end);
 
+  // Asserts that the new streamlined 1-Click Render card is rendered
+  assert.ok(studioHtml.includes('Compile your video with 1-Click Offline FFmpeg Engine'), 'Expected main card heading');
+  assert.ok(studioHtml.includes('id="btn-add-files"'), 'Expected Attach Images button');
+  assert.ok(studioHtml.includes('id="studio-images-count"'), 'Expected images counter');
+  assert.ok(studioHtml.includes('id="s-resolution"'), 'Expected resolution selector');
+  assert.ok(studioHtml.includes('id="btn-create-video"'), 'Expected export action button');
+  assert.ok(studioHtml.includes('Download 1-Click Render Package (.zip)'), 'Expected 1-Click Render Package button text');
+
+  // Confirms all old multi-section studio clutter is removed from #page-studio
   for (const removed of [
-    '(Timestamp Driven Ingestion)',
+    'MEDIA & AUDIO ASSET DECK',
+    'RENDER & MOTION ENGINE SETTINGS',
+    'CAPTIONS & SUBTITLES STUDIO',
+    'PRECISION MULTI-TRACK TIMELINE',
+    'EXPORT CONFIGURATION & HIGH-SPEED RENDER',
     'Scan Folder on Disk',
-    'Clear Media',
-    'Recognized formats:',
-    '0_00—0_03.png',
-    '0_30—0_33.png',
-    'scene_01.mp4',
-    '(Sync Master)',
-    '(Bed Audio)'
+    'id="media-viewport"',
+    'id="timeline-tracks"'
   ]) {
-    assert.equal(sec1.includes(removed), false, `Removed text still present in Studio Section 01: ${removed}`);
+    assert.equal(studioHtml.includes(removed), false, `Old removed clutter still present in #page-studio: ${removed}`);
   }
-
-  assert.equal(sec1.includes('id="btn-add-zip"'), false, 'Add Zip button should be removed');
-  assert.ok(sec1.includes('id="btn-clear"') && sec1.includes('>Reset</span>'), 'Expected Reset button');
-  assert.ok(sec1.includes('id="media-slider"'), 'Expected media slider for overflow past 8 images');
-
-  const voiceStart = sec1.indexOf('Voiceover Track');
-  const musicStart = sec1.indexOf('Background Music');
-  assert.ok(voiceStart > 0 && musicStart > voiceStart, 'Expected Voiceover Track before Background Music');
-  assert.ok(sec1.slice(voiceStart, musicStart).includes('optional'), 'Voiceover Track should keep optional label');
-  assert.ok(sec1.slice(musicStart).includes('optional'), 'Background Music should have optional label');
-
-  assert.ok(css.includes('calc((100% - 7 * 0.65rem) / 8)'), 'Expected 8-image horizontal grid sizing');
-  assert.ok(css.includes('height: 204px;'), 'Expected fixed-height drop zone box so height does not expand');
-  assert.ok(css.includes('scrollbar-width: none;'), 'Expected native horizontal scrollbar hidden above slider');
-
-  const sec2End = html.indexOf('<!-- SECTION 3', end);
-  assert.ok(sec2End > end, 'Expected Studio Section 02 bounds');
-  const sec2 = html.slice(end, sec2End);
-  assert.equal(sec2.includes('(Hardware Accelerated Engine)'), false, 'Hardware Accelerated Engine subtitle should be removed');
-  assert.equal(sec2.includes('Toggle active motion types'), false, 'Toggle active motion types hint should be removed');
-  const transIdx = sec2.indexOf('id="transition-types"');
-  assert.equal(sec2.slice(transIdx).includes('border-t'), false, 'Transition Sound Volume should not have a top border line');
 });
 
-test('Studio Section 03 HTML & captions.js support full line default, No Caption default, font, color, highlight, and stretched box', () => {
-  const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
-  const sec3Start = html.indexOf('<!-- SECTION 3');
-  const sec4Start = html.indexOf('<!-- SECTION 4', sec3Start);
-  assert.ok(sec3Start > 0 && sec4Start > sec3Start, 'Expected Studio Section 03 bounds');
-  const sec3 = html.slice(sec3Start, sec4Start);
-
-  for (const removed of [
-    '(Synced to Speech Timecodes)',
-    'Words Per Line:',
-    'id="s-caption-words"',
-    '[ Frame Canvas — Ready ]',
-    'SAMPLE CAPTION TEXT',
-    '>Synced</span>',
-    'shadow-teal-500/20',
-    '<div class="h-10',
-    "Or click 'Send to Studio' from Timing!"
-  ]) {
-    assert.equal(sec3.includes(removed), false, `Removed content still present in Section 03: ${removed}`);
-  }
-
-  assert.match(sec3, /<button[^>]*class="template-card active[^"]*"[^>]*data-style="none"/, 'No Caption card should be active by default');
-  assert.doesNotMatch(sec3, /<button[^>]*class="template-card active[^"]*"[^>]*data-style="bold"/, 'Bold Pop card should not be active by default');
-  assert.match(sec3, /<textarea[^>]*id="caption-text"[^>]*class="[^"]*flex-1/, 'Caption textarea should use flex-1 to stretch to bottom footer');
-
+test('Captions chunkWords and generateASS support full line default, fonts, colors, and styling', () => {
   const sampleWords = 'You have been exhausted all day long'.split(' ').map((w, i) => ({
     word: w,
     startSec: i * 0.4,
@@ -228,33 +189,6 @@ test('Studio Section 03 HTML & captions.js support full line default, No Caption
 
   const assBold = generateASS(sampleWords, { style: 'bold' });
   assert.ok(assBold.includes('YOU HAVE BEEN EXHAUSTED ALL DAY LONG'), 'Bold ASS should render full line when wordsPerLine omitted');
-
-  const sec5Start = html.indexOf('<!-- SECTION 5', sec4Start);
-  assert.ok(sec5Start > sec4Start, 'Expected Studio Section 04 bounds');
-  const sec4 = html.slice(sec4Start, sec5Start);
-  assert.equal(sec4.includes('id="btn-timeline-play"'), false, 'Timeline play button should be removed');
-  assert.equal(sec4.includes('id="btn-timeline-fit"'), false, 'Timeline FIT button should be removed');
-  assert.equal(sec4.includes('id="timeline-time"'), false, 'Timeline clock box should be removed');
-  assert.equal(sec4.includes('id="timeline-scale"'), false, 'Timeline zoom slider should be removed');
-  const h2End = sec4.indexOf('</h2>');
-  assert.equal(sec4.slice(0, h2End).includes('Total Duration:'), false, 'Total Duration should be removed from left heading');
-  assert.ok(sec4.slice(h2End).includes('id="timeline-duration"') && sec4.slice(h2End).includes('Total Duration:'), 'Total Duration should appear on right side of Section 04 header');
-
-  const studioEnd = html.indexOf('<!-- /#page-studio -->', sec5Start);
-  assert.ok(studioEnd > sec5Start, 'Expected Studio Section 05 bounds');
-  const sec5 = html.slice(sec5Start, studioEnd);
-  assert.equal(sec5.includes('FFmpeg Accelerated'), false, 'FFmpeg Accelerated badge should be removed');
-  assert.equal(sec5.includes('Quick Path:'), false, 'Quick Path label should be removed');
-  assert.equal(sec5.includes('id="out-dir-presets"'), false, 'Quick Path chips container should be removed');
-  assert.equal(sec5.includes('Start Render'), false, 'Start Render text should be removed');
-  assert.ok(sec5.includes('>Create Video</span>'), 'Render button should be named Create Video');
-  assert.ok(sec5.includes('justify-center'), 'Render button container should center the button');
-  assert.ok(sec5.includes('id="out-dir"') && sec5.includes('value="C:\\"'), 'Destination Folder should default to C:\\');
-  assert.ok(sec5.includes('id="btn-browse-out-dir"'), 'Browse button should be present');
-  assert.equal(html.includes('id="modal-folder-browser"'), false, 'Custom HTML folder modal should not be used');
-
-  const appJs = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'app.js'), 'utf8');
-  assert.ok(appJs.includes('window.showDirectoryPicker'), 'Browse should use Chrome native Windows Explorer showDirectoryPicker');
 });
 
 test('Settings & export download endpoints handle C:\\ default and missing job cleanly', async () => {
