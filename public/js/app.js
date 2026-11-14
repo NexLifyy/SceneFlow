@@ -761,13 +761,15 @@ if ($('input-music')) $('input-music').onchange = async (e) => {
 };
 if ($('btn-remove-music')) $('btn-remove-music').onclick = () => {
   state.music = null;
-  $('music-name').textContent = 'No music added';
-  $('btn-remove-music').classList.add('hidden');
-  $('music-vol-row').style.display = 'none';
+  if ($('music-name')) $('music-name').textContent = 'No music added';
+  if ($('btn-remove-music')) $('btn-remove-music').classList.add('hidden');
+  if ($('music-vol-row')) $('music-vol-row').style.display = 'none';
 };
-$('music-volume').oninput = (e) => {
-  $('music-volume-val').textContent = `${Math.round(e.target.value * 100)}%`;
-};
+if ($('music-volume')) {
+  $('music-volume').oninput = (e) => {
+    if ($('music-volume-val')) $('music-volume-val').textContent = `${Math.round(e.target.value * 100)}%`;
+  };
+}
 
 // ══════════════════════════════════════════════════════════════════════════
 // SECTION 2 — SETTINGS
@@ -775,29 +777,29 @@ $('music-volume').oninput = (e) => {
 
 function getSettings() {
   return {
-    videoSize:    $('s-video-size').value,
-    quality:      $('s-quality').value,
-    fps:          parseInt($('s-fps').value),
-    fitMode:      $('s-fit-mode').value,
-    imageMotion:  $('s-motion').value,
-    motionSpeed:  $('s-motion-speed').value,
-    gapMode:      $('s-gap-mode').value,
-    transitions:  $('s-transitions').value !== 'off',
-    musicVolume:  parseFloat($('music-volume').value),
+    videoSize:    $('s-video-size') ? $('s-video-size').value : '1080p',
+    quality:      $('s-quality') ? $('s-quality').value : 'youtube',
+    fps:          $('s-fps') ? parseInt($('s-fps').value) : 30,
+    fitMode:      $('s-fit-mode') ? $('s-fit-mode').value : 'contain',
+    imageMotion:  $('s-motion') ? $('s-motion').value : 'auto',
+    motionSpeed:  $('s-motion-speed') ? $('s-motion-speed').value : 'medium',
+    gapMode:      $('s-gap-mode') ? $('s-gap-mode').value : 'extend',
+    transitions:  $('s-transitions') ? $('s-transitions').value !== 'off' : false,
+    musicVolume:  $('music-volume') ? parseFloat($('music-volume').value) : 0.15,
     motionEffects: {
-      zoomIn:   $('fx-zoomIn').checked,
-      zoomOut:  $('fx-zoomOut').checked,
-      panLeft:  $('fx-panLeft').checked,
-      panRight: $('fx-panRight').checked,
+      zoomIn:   $('fx-zoomIn') ? $('fx-zoomIn').checked : true,
+      zoomOut:  $('fx-zoomOut') ? $('fx-zoomOut').checked : true,
+      panLeft:  $('fx-panLeft') ? $('fx-panLeft').checked : true,
+      panRight: $('fx-panRight') ? $('fx-panRight').checked : true,
     },
     transitionTypes: {
-      fade:     $('tr-fade').checked,
-      dissolve: $('tr-dissolve').checked,
-      slide:    $('tr-slide').checked,
-      wipe:     $('tr-wipe').checked,
-      zoom:     $('tr-zoom').checked,
+      fade:     $('tr-fade') ? $('tr-fade').checked : true,
+      dissolve: $('tr-dissolve') ? $('tr-dissolve').checked : true,
+      slide:    $('tr-slide') ? $('tr-slide').checked : true,
+      wipe:     $('tr-wipe') ? $('tr-wipe').checked : true,
+      zoom:     $('tr-zoom') ? $('tr-zoom').checked : true,
     },
-    transitionSoundsVolume: parseFloat($('s-trans-vol').value),
+    transitionSoundsVolume: $('s-trans-vol') ? parseFloat($('s-trans-vol').value) : 0.5,
   };
 }
 
@@ -820,10 +822,10 @@ function applySettings(s) {
     toggleTransitionTypes(isTransOn);
   }
   if (s.motionEffects) {
-    $('fx-zoomIn').checked   = !!s.motionEffects.zoomIn;
-    $('fx-zoomOut').checked  = !!s.motionEffects.zoomOut;
-    $('fx-panLeft').checked  = !!s.motionEffects.panLeft;
-    $('fx-panRight').checked = !!s.motionEffects.panRight;
+    if ($('fx-zoomIn')) $('fx-zoomIn').checked   = !!s.motionEffects.zoomIn;
+    if ($('fx-zoomOut')) $('fx-zoomOut').checked  = !!s.motionEffects.zoomOut;
+    if ($('fx-panLeft')) $('fx-panLeft').checked  = !!s.motionEffects.panLeft;
+    if ($('fx-panRight')) $('fx-panRight').checked = !!s.motionEffects.panRight;
   }
   if (s.captionStyle) {
     const hasCard = Array.from($$('.template-card')).some(c => c.dataset.style === s.captionStyle);
@@ -851,11 +853,13 @@ function applySettings(s) {
   state.wordsPerLine = 'all';
   const folderEl = $('export-folder') || $('out-dir');
   if (s.saveFolder && folderEl) folderEl.value = s.saveFolder;
-  $('music-volume-val').textContent = `${Math.round(($('music-volume').value) * 100)}%`;
+  if ($('music-volume-val') && $('music-volume')) {
+    $('music-volume-val').textContent = `${Math.round(($('music-volume').value) * 100)}%`;
+  }
 }
 
 function toggleTransitionTypes(show) {
-  $('transition-types').classList.toggle('hidden', !show);
+  if ($('transition-types')) $('transition-types').classList.toggle('hidden', !show);
 }
 if ($('s-transitions')) $('s-transitions').onchange = (e) => toggleTransitionTypes(e.target.value === 'on');
 
@@ -870,8 +874,10 @@ if ($('btn-save-settings')) $('btn-save-settings').onclick = async () => {
     wordsPerLine: 'all',
   };
   await api('POST', '/api/settings', s);
-  $('settings-saved-msg').classList.remove('hidden');
-  setTimeout(() => $('settings-saved-msg').classList.add('hidden'), 3000);
+  if ($('settings-saved-msg')) {
+    $('settings-saved-msg').classList.remove('hidden');
+    setTimeout(() => $('settings-saved-msg').classList.add('hidden'), 3000);
+  }
 };
 
 // Rebuild timeline when gap mode changes
@@ -1369,7 +1375,7 @@ async function rebuildTimeline() {
   }
   const { clips, totalDuration } = await api('POST', '/api/parse-filenames', {
     files: state.files.map(f => ({ name: f.name, path: f.path, type: f.type })),
-    gapMode: $('s-gap-mode').value,
+    gapMode: $('s-gap-mode') ? $('s-gap-mode').value : 'extend',
   });
   state.clips = clips;
   state.totalDuration = totalDuration;
@@ -2475,10 +2481,12 @@ async function loadHistory() {
   }
 }
 
-$('btn-clear-history').onclick = async () => {
-  await api('DELETE', '/api/history');
-  loadHistory();
-};
+if ($('btn-clear-history')) {
+  $('btn-clear-history').onclick = async () => {
+    await api('DELETE', '/api/history');
+    loadHistory();
+  };
+}
 
 window.openFolder = (path) => api('POST', '/api/open-folder', { folderPath: path });
 
