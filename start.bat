@@ -27,7 +27,7 @@ if %ERRORLEVEL% NEQ 0 (
 
 :: 2. Verify dependencies
 if not exist "node_modules" (
-    echo [1/3] Installing dependencies (first-time setup)...
+    echo [1/3] Installing dependencies...
     call npm.cmd install
     if %ERRORLEVEL% NEQ 0 (
         echo [ERROR] npm install encountered an error.
@@ -41,11 +41,11 @@ if not exist "node_modules" (
 :: 3. Free port 3000 if previously occupied
 echo [2/3] Checking port 3000...
 for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":3000" ^| findstr "LISTENING"') do (
-    echo Stopping previous server on port 3000 (PID: %%a)...
+    echo Freeing port 3000 - PID %%a
     taskkill /F /PID %%a >nul 2>nul
 )
 
-:: 4. Start server (opens default browser automatically when ready)
+:: 4. Start server (it will automatically open your default browser when ready)
 echo [3/3] Starting SceneFlow Studio server...
 echo.
 echo ========================================================
