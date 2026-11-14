@@ -18,8 +18,12 @@ if exist "frame-maker\server.js" (
 :: 1. Verify Node.js is installed
 where node >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Node.js was not found in your system PATH!
-    echo Please install Node.js from https://nodejs.org/ and run this again.
+    echo [NOTICE] Node.js is required to run SceneFlow Studio.
+    echo Opening official Node.js download page in your browser...
+    start https://nodejs.org/en/download
+    echo.
+    echo Please install the recommended Node.js LTS version,
+    echo then double-click Start_SceneFlow.cmd again.
     echo.
     pause
     exit /b 1

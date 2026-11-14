@@ -10,7 +10,15 @@ End-to-end AI video production pipeline: **Voice → Timing → Prompts → Imag
 4. **Images** (`/images`): Bulk-generate images cleanly from timestamped prompts and load them into Studio.
 5. **Studio** (`/studio`): Preview 16:9 canvas, captions, waveforms, timeline clips, and export the final MP4.
 
-## Setup
+## 1-Click Quick Start (Windows)
+
+1. **Install Node.js** (LTS recommended) from [nodejs.org](https://nodejs.org/).
+2. **Download SceneFlow**: Click green **Code → Download ZIP** and extract the folder.
+3. **Double-click `Start_SceneFlow.cmd`**:
+   - Dependencies and FFmpeg are verified and installed automatically on first launch.
+   - SceneFlow starts and automatically opens your default browser at **http://localhost:3000**.
+
+## Manual Setup
 
 ```bash
 npm install
